@@ -1,162 +1,222 @@
 """
-AIRFOIL REFINING FILE
+Builds 3D geometry of a two-airfoil section.
 
-PARAMETERS: "airfoil file path", number of points parameter
+Use setters for geometrical paramaters.
 
-RETURNS: open airfoil points 2D array, closed airfoil points 2D array
+root and tip attributes are the actual geometry (3D arrays containing the coordinates of the two foils).
 
-For the airfoil file path, you can place the file in the desktop and use:
-"Users\\[USERNAME]\\Desktop\\[AIRFOIL FILE.txt]"
-(don't forget the quotation marks)
-
-Number of points parameter DOES NOT define the exact number of points in
-the returned arrays. The number of points will be at least LESS than
-2.5 times the parameter. Recommended values: 200-300.
-
-Use Selig format dat files from airfoiltools.com or export from XFLR5 saved
-as .txt instead of .dat!!!
-
-In this format, the files have a single point list that starts at x = 1
-(TE), loops around the LE and goes back to x = 1.
-
-The airfoils output by this file will probably not run through X-Foil analysis
-optimally. If using for VLM, try refining them with the application's own
-option for it, such as "refine globally" in XFLR5.
+Needs a main with a guy to call it. Needs a projecter that will project the geometry onto the planes that
+the hotwire ends move along.
 """
 
-import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
 import scipy.interpolate as si
 import math
-from operator import itemgetter
 
-airfoilpath = setsmthplsss
+#Class that creates a two-foil section from geometric parameters
+class Section:
+        def __init__(self,rootfoil,tipfoil):
+                self.rootfoil = rootfoil
+                self.tipfoil = tipfoil
 
-foil = "C:\\"+str(airfoilpath)
+                self.npoints = 150
 
-df = pd.read_csv(foil,sep='\s+',skiprows=(1),header=(0))
+                self.rightside = True
+                self.chord = [1,1]
+                self.span = [0,1]
+                self.offset = [0,0]
+                self.twist = [0,0]
+                #self.sweep = None
+                self.dihedral = [0,0]
+                self.yoffset = 0
+                self.r25 = [[0.25, 0, 0],[0.25, 1, 0]] #(reference points at 0.25c)
+                self.o = [0.25,0.25] #rotation centre (chord fraction)
 
-foil = df.values
+                self.oroot = Airfoil(self.rootfoil)
+                self.otip = Airfoil(self.tipfoil)
 
+                self.root = None
+                self.tip = None
 
-class Airfoil:
+        def set_npoints(self, n):
+                self.npoints = n
+        def set_side(self, side):
+                if side == 'r':
+                        self.rightside = True
+                if side == 'l':
+                        self.rightside = False
+                else:
+                        raise ValueError("Side can only be 'r' or 'l'")
+        def set_chord(self, a, b):
+                self.chord = [a,b]
+        def set_span(self, a, b):
+                self.span = [a,b]
+        def set_offset(self, a,b):
+                self.offset = [a,b]
+        def set_twist(self, a,b):
+                self.offset = [a,b]
+        def set_dihedral(self, a,b):
+                self.dihedral = [a,b]
+        def r25_yoffset(y):
+                self.yoffset = y
+                self.r25[:,1] = [x + y for x in self.r25[:,2]]
+        def set_o(self, a,b):
+                self.o = [a,b]
 
-        def __init__(self, foil):
-                self.foil = foil
+        #builds the 3D geometry
+        def build(self):
+                #refines foils to npoints points
+                root = self.oroot.foil_refine(self.npoints)
+                tip = self.otip.foil_refine(self.npoints)
 
-        def rotate(self,xarr,yarr,ox,oy,radsangle):
-                """
-                Rotate a list of points counterclockwise by a given angle around a given origin.
+                #rescales to chord
+                root = Airfoil.resize(root[0], root[1], self.chord[0])
+                tip = Airfoil.resize(tip[0], tip[1], self.chord[1])
+                self.r25[:,0] = [0.25*self.chord[0], 0.25*self.chord[1]]
 
-                The angle should be given in radians.
-                """
+                #twist rotation
+                root = Airfoil.rotate(root[0], root[1], self.o[0], 0, math.radians(self.twist[0]))
+                tip = Airfoil.rotate(tip[0], tip[1], self.o[1], 0, math.radians(self.twist[1]))
+                #add functionality for tracking r25 if o != 0.25
 
-                return [ox + math.cos(-angle) * (xarr[i] - ox) - math.sin(-angle) * (yarr[i] - oy) for i in range(len(xarr))], [oy + math.sin(-angle) * (xarr[i] - ox) + math.cos(-angle) * (yarr[i] - oy) for i in range(len(yarr))]
+                #adds z-coordinate (span)
+                root = np.vstack((root, zeros(len(root))))
+                tip = np.vstack((tip, zeros(len(tip))))
 
-        def translate(self,xarr,yarr,xdist,ydist):
-                """
-                Translate by xdist and ydist
-                """
+                #dihedral rotation
+                root[1], root[2] = Airfoil.rotate(root[1], root[2], 0, 0, math.radians(self.dihedral[0]))
+                tip[1], tip[2] = Airfoil.rotate(tip[1], tip[2], 0, 0, math.radians(self.dihedral[1]))
+                #add functionality for tracking r25 if o != 0.25
 
-                return [x + xdist for x in xarr], [x + ydist for x in yarr]
+                #offset and span translation
+                root[0], root[2] = Airfoil.translate(root[0], root[2], self.offset[0], self.span[0])
+                tip[0], tip[2] = Airfoil.translate(tip[0], tip[2], self.offset[1], self.span[1])
+                #add functionality for tracking r25 if o != 0.25
 
-        def resize(self,xarr,yarr,chord):
-                """
-                Resize to chord with origin [0, 0]
-                Use only for derotated airfoils with LE at [0,0]
-                """
+                #y-axis translation from dihedral and y-offset
+                root[1], root[2] = Airfoil.translate(root[1], root[2], self.yoffset, 0)
+                tip[1], tip[2] = Airfoil.translate(tip[1], tip[2], np.sin(math.radians(self.dihedral[0]))*(self.span[1]-self.span[0]) + self.yoffset, 0)
+                #add functionality for tracking r25 if o != 0.25
 
-                self.chord_ratio = chord*2/(xarr[0] + xarr[-1])
+                self.root = root
+                self.tip = tip
 
-                return [x*self.chord_ratio for x in xarr], [x*self.chord_ratio for x in yarr]
+                def get_foils(self):
+                        return self.root, self.tip
 
-        def foil_refine(self, npoints):
+        class Airfoil:
 
-                self.x = self.foil[:,0]
-                self.y = self.foil[:,1]
+                def __init__(self, foil):
+                        self.foil = foil
 
-                self.lex = []
-                self.ley = []
+                def rotate(xarr,yarr,ox,oy,radsangle):
+                        """
+                        Rotate a list of points counterclockwise by a given angle around a given origin.
 
-                #Making LE spline to find accurate LE for normalization and derotation
-                for i in range(len(self.x)):
-                        if self.x[i] < 0.05:
-                                self.lex.append(self.x[i])
-                                self.ley.append(self.y[i])
+                        The angle should be given in radians.
+                        """
 
-                #Linear point spacing in y, more points near the LE
-                self.new_ley = np.linspace(min(self.ley), max(self.ley), 200)
-                self.new_lex = si.interpolate.interp1d(self.ley, self.lex, kind='cubic')(self.new_ley)
+                        return [ox + math.cos(-angle) * (xarr[i] - ox) - math.sin(-angle) * (yarr[i] - oy) for i in range(len(xarr))], [oy + math.sin(-angle) * (xarr[i] - ox) + math.cos(-angle) * (yarr[i] - oy) for i in range(len(yarr))]
 
-                self.tex = (self.x[0] + self.x[-1])/2
-                self.tey = (self.y[0] + self.y[-1])/2
+                def translate(xarr,yarr,xdist,ydist):
+                        """
+                        Translate by xdist and ydist
+                        """
 
-                self.c = []
+                        return [x + xdist for x in xarr], [x + ydist for x in yarr]
 
-                for i in range(len(self.new_lex)):
-                self.c.append( np.sqrt( (self.new_lex[i] - self.tex)**2 + (self.new_ley[i] - self.tey)**2 ) )
+                def resize(xarr,yarr,chord):
+                        """
+                        Resize to chord with origin [0, 0]
+                        Use only for derotated airfoils with LE at [0,0]
+                        """
 
-                self.xle = self.new_lex[np.argmax(self.c)]
-                self.yle = self.new_ley[np.argmax(self.c)]
+                        chord_ratio = chord*2/(xarr[0] + xarr[-1])
 
-                self.x, self.y = self.rotate( self.x, self.y, self.xle, self.yle, -np.arctan((self.tey-self.yle)/(self.tex-self.xle)) )
+                        return [x*chord_ratio for x in xarr], [x*chord_ratio for x in yarr]
 
-                self.x, self.y = self.translate( self.x, self.y, -self.xle, -self.yle )
+                def foil_refine(self, npoints):
 
-                self.x, self.y = self.resize( self.x, self.y, 1 )
+                        x = self.foil[:,0]
+                        y = self.foil[:,1]
 
-                for i in range(len(self.x)):
-                        if self.x[i] < 0.05:
-                                if self.y[i] < 0:
-                                        self.indexsplit = i
-                                        break
+                        lex = []
+                        ley = []
 
-                if self.y[self.indexsplit-1] - self.y[self.indexsplit] < 0:
-                        self.x = np.flip(self.x)
-                        self.y = np.flip(self.y)
+                        #Takes small set of points near LE to find accurate LE
+                        for i in range(len(x)):
+                                if x[i] < 0.05:
+                                        lex.append(x[i])
+                                        ley.append(y[i])
 
-                        for i in range(len(self.x)):
-                                if self.x[i] < 0.05:
-                                        if self.y[i] < 0:
-                                                self.indexsplit = i
+                        #Sets up a linear point spacing and does spline interpolation of the LE curve
+                        new_ley = np.linspace(min(ley), max(ley), 200)
+                        new_lex = si.interpolate.interp1d(ley, lex, kind='cubic')(new_ley)
+
+                        #finds TE
+                        tex = (x[0] + x[-1])/2
+                        tey = (y[0] + y[-1])/2
+
+                        c = []
+
+                        #finds distance between every point of interpolated LE section and TE
+                        for i in range(len(new_lex)):
+                                c.append( np.sqrt( (new_lex[i] - tex)**2 + (new_ley[i] - tey)**2 ) )
+
+                        #finds most distant point from TE (a.k.a. most accurate LE)
+                        xle = new_lex[np.argmax(c)]
+                        yle = new_ley[np.argmax(c)]
+
+                        #derotates
+                        x, y = rotate( x, y, xle, yle, -np.arctan((tey-yle)/(tex-xle)) )
+
+                        #translates so LE is at [0,0]
+                        x, y = translate( x, y, -xle, -yle )
+
+                        #normalizes so that TE is at [1,0]
+                        x, y = resize( x, y, 1 )
+
+                        #splits foil into upper and lower curves
+                        for i in range(len(x)):
+                                if x[i] < 0.05:
+                                        if y[i] < 0:
+                                                indexsplit = i
                                                 break
 
-                self.xu = np.concatenate((self.x[:self.indexsplit],[0]), axis=None)
-                self.yu = np.concatenate((self.y[:self.indexsplit],[0]), axis=None)
+                        #flips if the foil starts on the underside
+                        if y[indexsplit-1] - y[indexsplit] < 0:
+                                x = np.flip(x)
+                                y = np.flip(y)
 
-                self.xl = np.concatenate(([0],self.x[self.indexsplit:]), axis=None)
-                self.yl = np.concatenate(([0],self.y[self.indexsplit:]), axis=None)
+                                for i in range(len(x)):
+                                        if x[i] < 0.05:
+                                                if y[i] < 0:
+                                                        indexsplit = i
+                                                        break
 
-                del self.lex
-                del self.ley
-                del self.new_lex
-                del self.new_ley
-                del self.tex
-                del self.tey
-                del self.c
-                del self.xle
-                del self.yle
+                        #adds the LE to both curves
+                        xu = np.concatenate((x[:indexsplit],[0]), axis=None)
+                        yu = np.concatenate((y[:indexsplit],[0]), axis=None)
 
-                if npoints % 2 != 0:
-                        npoints += 1
+                        xl = np.concatenate(([0],x[indexsplit:]), axis=None)
+                        yl = np.concatenate(([0],y[indexsplit:]), axis=None)
 
-                #Sine-weighted spacing for the x distribution of interpolated points, more points near TE and LE
-                self.x_new = [x/2 + 0.5 for x in np.sin(np.linspace(-(math.pi/2), (math.pi/2), npoints/2))]
+                        #makes sure npoints is even
+                        if npoints % 2 != 0:
+                                npoints += 1
 
-                self.yu_new = si.interpolate.Akima1DInterpolator(self.xu, self.yu)(self.x_new)
-                self.yl_new = si.interpolate.Akima1DInterpolator(self.xl, self.yl)(self.x_new)
+                        #Sine-weighted spacing for the x distribution of interpolated points, more points near TE and LE
+                        x_new = [x/2 + 0.5 for x in np.sin(np.linspace(-(math.pi/2), (math.pi/2), npoints/2))]
 
-                self.x = np.concatenate( ( np.flip(self.x_new),self.x_new[1:] ), axis=None )
-                self.y = np.concatenate( ( np.flip(self.yu_new),self.yl_new[1:] ), axis=None )
+                        #akima interpolation is less susceptible to oscillations near endpoints
+                        yu_new = si.interpolate.Akima1DInterpolator(xu, yu)(x_new)
+                        yl_new = si.interpolate.Akima1DInterpolator(xl, yl)(x_new)
 
-                self.foil = [self.x,self.y]
+                        #joins the two curves (excluding the LE from the lower curve to avoid duplicate) to form a single foil
+                        x = np.concatenate( ( np.flip(x_new),x_new[1:] ), axis=None )
+                        y = np.concatenate( ( np.flip(yu_new),yl_new[1:] ), axis=None )
 
-                del self.x_new
-                del self.yu_new
-                del self.yl_new
-                del self.x
-                del self.y
+                        self.foil = [x,y]
 
-        def getfoil(self):
-                return self.foil
+                        def getfoil(self):
+                                return self.foil
