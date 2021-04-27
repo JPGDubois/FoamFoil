@@ -96,7 +96,7 @@ class Section:
                 tip[0], tip[2] = Airfoil.translate(tip[0], tip[2], self.offset[1], self.span[1])
                 #add functionality for tracking r25 if o != 0.25
 
-                #y-axis translation from dihedral and y-offset
+                #y-axis translation from dihedral and root y-offset
                 root[1], root[2] = Airfoil.translate(root[1], root[2], self.yoffset, 0)
                 tip[1], tip[2] = Airfoil.translate(tip[1], tip[2], np.sin(math.radians(self.dihedral[0]))*(self.span[1]-self.span[0]) + self.yoffset, 0)
                 #add functionality for tracking r25 if o != 0.25
