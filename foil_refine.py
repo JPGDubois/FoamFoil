@@ -66,8 +66,11 @@ class Section:
         #builds the 3D geometry
         def build(self):
                 #refines foils to npoints points
-                root = self.oroot.foil_refine(self.npoints)
-                tip = self.otip.foil_refine(self.npoints)
+                rootfoil = self.oroot.foil_refine(self.npoints)
+                tipfoil = self.otip.foil_refine(self.npoints)
+
+                root = rootfoil.foil
+                tip = tipfoil.foil
 
                 #rescales to chord
                 root = Airfoil.resize(root[0], root[1], self.chord[0])
@@ -98,15 +101,18 @@ class Section:
                 tip[1], tip[2] = Airfoil.translate(tip[1], tip[2], np.sin(math.radians(self.dihedral[0]))*(self.span[1]-self.span[0]) + self.yoffset, 0)
                 #add functionality for tracking r25 if o != 0.25
 
-                self.root = root
-                self.tip = tip
+                self.root = Airfoil(root)
+                self.tip = Airfoil(tip)
 
                 def get_foils(self):
-                        return self.root, self.tip
+                        return self.root.foil, self.tip.foil
 
         class Airfoil:
 
                 def __init__(self, foil):
+                        self.foil = foil
+
+                def set_foil(self, foil):
                         self.foil = foil
 
                 def rotate(xarr,yarr,ox,oy,radsangle):
