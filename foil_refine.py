@@ -1,12 +1,14 @@
 """
-Builds 3D geometry of a two-airfoil section.
+Class Section builds 3D geometry of a two-airfoil section.
 
 Use setters for geometrical paramaters.
 
 root and tip attributes are the actual geometry (3D arrays containing the coordinates of the two foils).
 
-Needs a main with a guy to call it. Needs a projecter that will project the geometry onto the planes that
-the hotwire ends move along.
+Class Coordinates projects the Section geometry to the machine's cutting planes and generates the
+coordinate data for g-code, as well as the plotting sets for the geometry to be displayed in the GUI.
+
+Coordinates takes an instance of Section as argument.
 """
 
 import numpy as np
@@ -303,12 +305,13 @@ class Coordinates:
 		l_y = self.l[1]
 		r_y = self.r[1]
 
-		#projects points to machine-planes in x and then y
+		#projects points to machine cutting left and right planes in x and then y
 		lc_x = [l_x[i] + ((self.machine_width/2) - l_z[i]) * (l_x[i] - r_x[i])/(l_z[i] - r_z[i]) for i in range(len(l_x))]
 		rc_x = [r_x[i] + ((self.machine_width/2) - r_z[i]) * (r_x[i] - l_x[i])/(r_z[i] - l_z[i]) for i in range(len(r_x))]
 
 		lc_y = [l_y[i] + ((self.machine_width/2) - l_z[i]) * (l_y[i] - r_y[i])/(l_z[i] - r_z[i]) for i in range(len(l_y))]
 		rc_y = [r_y[i] + ((self.machine_width/2) - r_z[i]) * (r_y[i] - l_y[i])/(r_z[i] - l_z[i]) for i in range(len(l_y))]
 
+		#left and right machine coordinate datasets
 		self.lc = np.vstack((lc_x, lc_y))
 		self.rc = np.vstack((rc_x, rc_y))
