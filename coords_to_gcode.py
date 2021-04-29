@@ -25,6 +25,8 @@ class Gcode:
     self.lu, self.ll, self.ru, self.rl = None
     #pts = [[11,12,13,14],[21,22,23,24],[31,32,33,34]]
 
+
+
     def splitter(self):
         #blahblah something something (Write later)
         self.Coords.get_coordinates()
@@ -36,15 +38,21 @@ class Gcode:
 
     #starts a list containing all commands
     def start(self):
-        return ['('+self.name+')','G90','M5']
+        return ['%'+('+self.name+')','G21','G90','M5']
 
     #steps through all the coordinates of the rapid movement
-    def rapid(self):
-        return 'G0'
+    #not happy with this approach but should work. it needs the last known coordinate, moves straight up to the ceiling height
+    #does a horizontal movement above the target position and goes straight down to the target point.
+    def rapid(self, ceiling, start, target):
+        gcode = ['G0']
+        gcode.append(self.ax1+str(start[0])+self.ax2+str(ceiling)+self.ax3+str(start[2])+self.ax4+str(ceiling))
+        gcode.append(self.ax1+str(target[0])+self.ax2+str(ceiling)+self.ax3+str(target[2])+self.ax4+str(ceiling))
+        gcode.append(self.ax1+str(target[0])+ self.ax2+str(target[1])+self.ax3+str(target[2])+self.ax4+str(target[3]))
+        return gcode
 
     #terminates the list
     def end(self):
-        return 'M5'
+        return ['M5','%']
 
     def cut(self):
         return ('G1' + 'M3 S'+ str(self.M[0]))
