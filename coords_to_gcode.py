@@ -2,65 +2,89 @@
 Converts list of coords to gcode
 """
 import numpy as np
+import math
+import foil_refine
+import pandas as pd
 
-pts = np.random.rand(200,4)
+class Gcode:
+    def __init__(self, Coords):
 
-name = 'test'
-ax1 = 'X'
-ax2 = 'Y'
-ax3 = 'U'
-ax4 = 'Z'
-M = 300
-F = 200
-#pts = [[11,12,13,14],[21,22,23,24],[31,32,33,34]]
+    #pts = np.random.rand(200,4)
 
-#starts a list containing all commands
-def start(name):
-    gcode = ['('+name+')','G90','M5']
-    return gcode
+    self.name = 'O0000'
+    self.ax1 = 'X'
+    self.ax2 = 'Y'
+    self.ax3 = 'U'
+    self.ax4 = 'Z'
+    self.M = [300,500]
+    self.F = [100, 250]
+    self.rapid_plane_dist = 15
+    self.foam_size = [100, 50, 300]
+    self.Coords = Coords
 
-#steps through all the coordinates of the rapid movement
-def rapid(gcode, pts):
-    for i in range(len(pts)):
-        line = str('G0 '+ax1+str(pts[i][0])+ ' ' +ax2+str(pts[i][1])+ ' ' + ax3+str(pts[i][2])+' '+ ax4+str(pts[i][3]))
-        gcode.append(line)
-    return gcode
+    self.lu, self.ll, self.ru, self.rl = None
+    #pts = [[11,12,13,14],[21,22,23,24],[31,32,33,34]]
 
-#terminates the list
-def end(gcode):
-    gcode.append('M5')
-    return gcode
+    def splitter(self):
+        #blahblah something something (Write later)
+        self.Coords.get_coordinates()
 
-#steps through all the coordiantes for the cut
-def cut(gcode, pts, F, M):
-    gcode.append('M3 S'+ str(M))
-    for i in range(len(pts)):
-        line = str('G1 '+ax1+str(pts[i][0])+ ' ' +ax2+str(pts[i][1])+ ' ' + ax3+str(pts[i][2])+' '+ ax4+str(pts[i][3])+ ' F' + str(F))
-        gcode.append(line)
-    gcode.append('M5')
-    return gcode
-"""
-def cut_Var(gcode, pts, F, M):
-    gcode.append('M3 S'+ str(M))
-    for i in range(len(pts)):
-        line = str('G1 '+ax1+str(pts[i][0])+ ' ' +ax2+str(pts[i][1])+ ' ' + ax3+str(pts[i][2])+' '+ ax4+str(pts[i][3])+ ' F' + str(F))
-        gcode.append(line)
-    gcode.append('M5')
-    return gcode
+        self.lu = array
+        self.ll = array
+        self.ru = array
+        self.rl = array
 
-def distance(pts):
-    k = []
-    for i in range(len(pts)-1):
-        d1 = np.sqrt((pts[i][0]-pts[i+1][0])**2 + (pts[i][1]-pts[i+1][1])**2)
-        d2 = np.sqrt((pts[i][2]-pts[i+1][2])**2 + (pts[i][3]-pts[i+1][3])**2)
+    #starts a list containing all commands
+    def start(self):
+        return ['('+self.name+')','G90','M5']
+
+    #steps through all the coordinates of the rapid movement
+    def rapid(self):
+        return 'G0'
+
+    #terminates the list
+    def end(self):
+        return 'M5'
+
+    def cut(self):
+        return ('G1' + 'M3 S'+ str(self.M[0]))
+
+    #steps through all the coordiantes for the cut (work in proggress)
+    def cut_upper(self):
+        gcode = []
+        lstart = lu[]
+        dl = [np.sqrt((lu[0,i+1] - lu[0,i])**2+(lu[1,i+1] - lu[1,i])**2) for i in range(len(lu[0])-1)]
+        dr = [np.sqrt((ru[0,i+1] - ru[0,i])**2+(ru[1,i+1] - ru[1,i])**2) for i in range(len(ru[0])-1)]
+        for i in range(len(pts)):
+
+            line = str(self.ax1+str(lu[0,i])+ ' ' +self.ax2+str(lu[1,i])+ ' ' + self.ax3+str(ru[0,i])+' '+ self.ax4+str(ru[1,i])+ ' F' + str(F) + ' M3 S' + str(M))
+            gcode.append(line)
+        gcode.append('M5')
+        return gcode
 
 
-        k.append(d1)
-    return k
-"""
+    """
+    def cut_Var(gcode, pts, F, M):
+        gcode.append('M3 S'+ str(M))
+        for i in range(len(pts)):
+            line = str('G1 '+ax1+str(pts[i][0])+ ' ' +ax2+str(pts[i][1])+ ' ' + ax3+str(pts[i][2])+' '+ ax4+str(pts[i][3])+ ' F' + str(F))
+            gcode.append(line)
+        gcode.append('M5')
+        return gcode
 
-file = start(name)
-file = rapid(file, pts)
-file = cut(file, pts, F, M)
-file = end(file)
-print(file)
+    def distance(pts):
+        k = []
+        for i in range(len(pts)-1):
+            d1 = np.sqrt((pts[i][0]-pts[i+1][0])**2 + (pts[i][1]-pts[i+1][1])**2)
+            d2 = np.sqrt((pts[i][2]-pts[i+1][2])**2 + (pts[i][3]-pts[i+1][3])**2)
+
+
+            k.append(d1)
+        return k
+    """
+
+    file = start(name)
+    file = rapid(file, pts)
+    file = cut(file, pts, F, M)
+    file = end(file)
+    print(file)
