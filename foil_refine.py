@@ -3,6 +3,8 @@ Class Section builds 3D geometry of a two-airfoil section.
 
 Use setters for geometrical paramaters.
 
+Use getters!
+
 root and tip attributes are the actual geometry (3D arrays containing the coordinates of the two foils).
 
 Class Coordinates projects the Section geometry to the machine's cutting planes and generates the
