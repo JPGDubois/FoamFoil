@@ -6,6 +6,8 @@ import math
 import foil_refine
 import pandas as pd
 
+
+
 class Gcode:
     def __init__(self, Coords):
 
@@ -38,13 +40,14 @@ class Gcode:
 
     #starts a list containing all commands
     def start(self):
-        return ['%'+('+self.name+')','G21','G90','M5']
+        return ['%','('+self.name+') G21 G90 M5']
 
     #steps through all the coordinates of the rapid movement
     #not happy with this approach but should work. it needs the last known coordinate, moves straight up to the ceiling height
     #does a horizontal movement above the target position and goes straight down to the target point.
     def rapid(self, ceiling, start, target):
         gcode = ['G0']
+
         gcode.append(self.ax1+str(start[0])+self.ax2+str(ceiling)+self.ax3+str(start[2])+self.ax4+str(ceiling))
         gcode.append(self.ax1+str(target[0])+self.ax2+str(ceiling)+self.ax3+str(target[2])+self.ax4+str(ceiling))
         gcode.append(self.ax1+str(target[0])+ self.ax2+str(target[1])+self.ax3+str(target[2])+self.ax4+str(target[3]))
@@ -71,25 +74,19 @@ class Gcode:
         return gcode
 
 
-    """
-    def cut_Var(gcode, pts, F, M):
-        gcode.append('M3 S'+ str(M))
-        for i in range(len(pts)):
-            line = str('G1 '+ax1+str(pts[i][0])+ ' ' +ax2+str(pts[i][1])+ ' ' + ax3+str(pts[i][2])+' '+ ax4+str(pts[i][3])+ ' F' + str(F))
-            gcode.append(line)
-        gcode.append('M5')
-        return gcode
-
-    def distance(pts):
+    #returns a factor that corresponds to the taper ratio at that specific point
+    #The difference in distance travelled in both planes scales with k.
+    def tapercorrect(this, pts):
         k = []
-        for i in range(len(pts)-1):
-            d1 = np.sqrt((pts[i][0]-pts[i+1][0])**2 + (pts[i][1]-pts[i+1][1])**2)
-            d2 = np.sqrt((pts[i][2]-pts[i+1][2])**2 + (pts[i][3]-pts[i+1][3])**2)
-
-
-            k.append(d1)
+        for i in range(len(this.pts)-1):
+            d1 = np.sqrt((this.pts[i][0]-this.pts[i+1][0])**2 + (this.pts[i][1]-this.pts[i+1][1])**2)
+            d2 = np.sqrt((this.pts[i][2]-this.pts[i+1][2])**2 + (this.pts[i][3]-this.pts[i+1][3])**2)
+            dd = np.abs(d1 - d2)
+            k.append(dd)
         return k
-    """
+
+
+
 
     file = start(name)
     file = rapid(file, pts)
