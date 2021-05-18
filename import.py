@@ -1,3 +1,9 @@
+"""
+Imports only dat files with:
+- 1st line header
+- coordinates looping around (not first LE -> TE top, LE -> TE bottom)
+
+"""
 import os
 name = "Users\kievb\Desktop\Projects\Icarus\AG 26.dat"
 #Making the list

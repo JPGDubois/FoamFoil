@@ -220,7 +220,7 @@ class Section:
                 root = self.Airfoil.rotate(self, root[0], root[1], self.o[0], 0, math.radians(self.twist[0]))
                 tip = self.Airfoil.rotate(self, tip[0], tip[1], self.o[1], 0, math.radians(self.twist[1]))
                 #add functionality for tracking r25 if o != 0.25
-                
+
                 #adds z-coordinate (span)
                 root = np.vstack((root, np.zeros(len(root[0]))))
                 tip = np.vstack((tip, np.zeros(len(tip[0]))))

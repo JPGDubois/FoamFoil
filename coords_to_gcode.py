@@ -1,5 +1,13 @@
 """
 Converts list of coords to gcode
+
+
+G0 = fast movement, goes to location as fast as possible
+G1 = cutting at specified feedrate (In combination with F)
+F = feed rate in mm/min
+M5 = turn off hot wire
+M3 = turn on hot wire (in combination with S)
+S = percentage of voltage to hot wire
 """
 import numpy as np
 import math
@@ -21,11 +29,20 @@ class Gcode:
     self.M = [300,500]
     self.F = [100, 250]
     self.rapid_plane_dist = 15
-    self.foam_size = [100, 50, 300]
+    self.foam_size = [100, 50, 300] #chord, hight, span
     self.Coords = Coords
 
     self.lu, self.ll, self.ru, self.rl = None
     #pts = [[11,12,13,14],[21,22,23,24],[31,32,33,34]]
+
+    def rotate(self,x,y,ox,oy,angle):
+            """
+            Rotate a list of points counterclockwise by a given angle around a given origin.
+
+            The angle should be given in radians.
+            """
+
+            return ox + math.cos(-angle) * (x - ox) - math.sin(-angle) * (y - oy), oy + math.sin(-angle) * (x - ox) + math.cos(-angle) * (y - oy)
 
 
 
@@ -60,31 +77,30 @@ class Gcode:
     def cut(self):
         return ('G1' + 'M3 S'+ str(self.M[0]))
 
-    #steps through all the coordiantes for the cut (work in proggress)
+    #steps through all the coordiantes for the cut top side (work in proggress)
     def cut_upper(self):
-        gcode = []
-        lstart = lu[]
-        dl = [np.sqrt((lu[0,i+1] - lu[0,i])**2+(lu[1,i+1] - lu[1,i])**2) for i in range(len(lu[0])-1)]
-        dr = [np.sqrt((ru[0,i+1] - ru[0,i])**2+(ru[1,i+1] - ru[1,i])**2) for i in range(len(ru[0])-1)]
-        for i in range(len(pts)):
+        gcode = ['G1']
+        lstart = self.lu[]
 
-            line = str(self.ax1+str(lu[0,i])+ ' ' +self.ax2+str(lu[1,i])+ ' ' + self.ax3+str(ru[0,i])+' '+ self.ax4+str(ru[1,i])+ ' F' + str(F) + ' M3 S' + str(M))
+
+
+        #Modify feedrate depending on point density, only one side is considered since they are equivalent.
+        dl = [np.sqrt((slef.lu[0,i+1] - self.lu[0,i])**2+(self.lu[1,i+1] - self.lu[1,i])**2) for i in range(len(lu[0])-1)]
+        #dr = [np.sqrt((self.ru[0,i+1] - self.ru[0,i])**2+(self.ru[1,i+1] - self.ru[1,i])**2) for i in range(len(ru[0])-1)]
+
+        fl = [((dl[i]-min(dl))/(max(dl)-min(dl)*(self.F[1]-self.F[0]))+self.F[0]) for i in range(len(self.lu[0])-1)]
+        #fr = [((dr[i]-min(dr))/(max(dr)-min(dr)*(self.F[1]-self.F[0]))+self.F[0]) for i in range(len(self.lu[0])-1)]
+
+        F = np.hstack([[fl[0]],fl]) #list of feedrates
+
+        for i in range(len(self.lu)): #make the gcode
+
+            line = str(self.ax1+str(self.lu[0,i])+ ' ' +self.ax2+str(self.lu[1,i])+ ' ' + self.ax3+str(self.ru[0,i])+' '+ self.ax4+str(self.ru[1,i])+ ' F' + str(F[i]) + ' M3 S' + str(self.M))
             gcode.append(line)
+
+
         gcode.append('M5')
         return gcode
-
-
-    #returns a factor that corresponds to the taper ratio at that specific point
-    #The difference in distance travelled in both planes scales with k.
-    def tapercorrect(this, pts):
-        k = []
-        for i in range(len(this.pts)-1):
-            d1 = np.sqrt((this.pts[i][0]-this.pts[i+1][0])**2 + (this.pts[i][1]-this.pts[i+1][1])**2)
-            d2 = np.sqrt((this.pts[i][2]-this.pts[i+1][2])**2 + (this.pts[i][3]-this.pts[i+1][3])**2)
-            dd = np.abs(d1 - d2)
-            k.append(dd)
-        return k
-
 
 
 
