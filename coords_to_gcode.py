@@ -19,7 +19,7 @@ class Gcode:
     self.ax3 = 'U'
     self.ax4 = 'Z'
     self.M = [300,500]
-    self.F = [100, 250]
+    self.F = [100,250]
     self.rapid_plane_dist = 15
     self.foam_size = [100, 50, 300]
     self.Coords = Coords
@@ -31,12 +31,12 @@ class Gcode:
 
     def splitter(self):
         #blahblah something something (Write later)
-        self.Coords.get_coordinates()
+        arr = self.Coords.get_coordinates()
 
-        self.lu = array
-        self.ll = array
-        self.ru = array
-        self.rl = array
+        self.lu = [ arr[0, 0, :-(-len(arr[0,0])//2)+1, arr[0, 1, :-(-len(arr[0,1])//2)+1 ]
+        self.ll = [ arr[0, 0, -(-len(arr[0,0])//2):, arr[0, 1, -(-len(arr[0,1])//2): ]
+        self.ru = [ arr[1, 0, :-(-len(arr[1,0])//2)+1, arr[1, 1, :-(-len(arr[1,1])//2)+1 ]
+        self.rl = [ arr[1, 0, -(-len(arr[1,0])//2):, arr[1, 1, -(-len(arr[1,1])//2): ]
 
     #starts a list containing all commands
     def start(self):
