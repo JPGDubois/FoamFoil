@@ -30,10 +30,28 @@ class Gcode:
     self.F = [100,250]
     self.rapid_plane_dist = 15
     self.foam_size = [100, 50, 300] #chord, hight, span
+    self.cut_direction = 'te'
     self.Coords = Coords
+    self.gcode = []
 
     self.lu, self.ll, self.ru, self.rl = None
     #pts = [[11,12,13,14],[21,22,23,24],[31,32,33,34]]
+
+    def set_cut_direction(self, direction):
+        if direction == 'le':
+            self.cut_direction = 'le'
+        else if direction == 'te':
+            self.cut_direction = 'te'
+        else if direction == 'te-le':
+            self.cut_direction = 'te-le'
+        else:
+            raise Exception("cut direction must be 'le', 'te' or 'te-le'")
+
+    def get_cut_direction(self):
+        return self.cut_direction
+
+    def get_gcode():
+        return self.gcode
 
     def rotate(self,x,y,ox,oy,angle):
             """
@@ -62,13 +80,6 @@ class Gcode:
     #steps through all the coordinates of the rapid movement
     #not happy with this approach but should work. it needs the last known coordinate, moves straight up to the ceiling height
     #does a horizontal movement above the target position and goes straight down to the target point.
-    def rapid(self, start, target):
-        gcode = ['G0']
-
-        gcode.append(self.ax1+str(start[0])+self.ax2+str(ceiling)+self.ax3+str(start[2])+self.ax4+str(ceiling))
-        gcode.append(self.ax1+str(target[0])+self.ax2+str(ceiling)+self.ax3+str(target[2])+self.ax4+str(ceiling))
-        gcode.append(self.ax1+str(target[0])+ self.ax2+str(target[1])+self.ax3+str(target[2])+self.ax4+str(target[3]))
-        return gcode
 
     #moves to rapid planing, zone can be "le", "te" or "ceil" for the front, back and top. le and te will result in horizontal motion
     #returns list of form [gcode line, final position]
@@ -109,6 +120,7 @@ class Gcode:
             gcode.append(self.ax1 + str(target[0]) + ' ' + self.ax3 + str(target[1]))
             return [gcode, [target[0], self.foam_size[1]+self.rapid_plane_dist, target[1], self.foam_size[1]+self.rapid_plane_dist]]
 
+
         else if zone == "le":
 
             if target < 0 or target > self.foam_size[1] + self.rapid_plane_dist:
@@ -145,23 +157,15 @@ class Gcode:
         else:
             raise ValueError("zone must be 'le', 'te' or 'ceil'")
 
-
-    #terminates the list
-    def end(self):
-        return ['M5','%']
-
     def cut(self):
         return ('G1' + 'M3 S'+ str(self.M[0]))
 
     #steps through all the coordiantes for the cut top side (work in proggress)
     def cut_upper(self):
-        gcode = ['G1']
-        lstart = self.lu[]
-
-
+        gcode = []
 
         #Modify feedrate depending on point density, only one side is considered since they are equivalent.
-        dl = [np.sqrt((slef.lu[0,i+1] - self.lu[0,i])**2+(self.lu[1,i+1] - self.lu[1,i])**2) for i in range(len(lu[0])-1)]
+        dl = [np.sqrt((self.lu[0,i+1] - self.lu[0,i])**2+(self.lu[1,i+1] - self.lu[1,i])**2) for i in range(len(lu[0])-1)]
 
         fl = [((dl[i]-min(dl))/(max(dl)-min(dl)*(self.F[1]-self.F[0]))+self.F[0]) for i in range(len(self.lu[0])-1)]
 
@@ -174,7 +178,82 @@ class Gcode:
 
 
         gcode.append('M5')
-        return gcode
+        return gcode, [self.lu[-1], self.ru[-1]]
+
+    def cut_lower(self):
+        gcode = []
+
+        #Modify feedrate depending on point density, only one side is considered since they are equivalent.
+        dl = [np.sqrt((self.ll[0,i+1] - self.ll[0,i])**2+(self.ll[1,i+1] - self.ll[1,i])**2) for i in range(len(lu[0])-1)]
+
+        fl = [((dl[i]-min(dl))/(max(dl)-min(dl)*(self.F[1]-self.F[0]))+self.F[0]) for i in range(len(self.ll[0])-1)]
+
+        F = np.hstack([[fl[0]],fl]) #list of feedrates
+
+        for i in range(len(self.ll)): #make the gcode
+
+            line = str(self.ax1+str(self.ll[0,i])+ ' ' +self.ax2+str(self.ll[1,i])+ ' ' + self.ax3+str(self.rl[0,i])+' '+ self.ax4+str(self.rl[1,i])+ ' F' + str(F[i]) + ' M3 S' + str(self.M))
+            gcode.append(line)
+
+
+        gcode.append('M5')
+        return gcode, [self.ll[-1], self.rl[-1]]
+
+    def build(self):
+
+        splitter(self)
+
+        gcode = [start(self)]
+
+        if self.cut_direction == 'te':
+
+            line, pos = to_rapid(self, [0, self.foam_size[1], 0, self.foam_size[1]])
+
+            gcode.append(line)
+
+            line, pos = rapid(self, pos, [self.lu[1][0], self.ru[1][0]], zone = 'te')
+
+            gcode = np.hstack([gcode, [line], cut(self)])
+
+            lines, pos = cut_upper(self)
+
+            gcode = np.hstack([gcode, lines])
+
+            line, pos = to_rapid(self, pos, zone = 'le')
+
+            gcode.append(line)
+
+            gcode.append('M5')
+
+            line, pos = rapid(self, pos, [self.lu[1][-1], self.ru[1][-1]], zone = 'te')
+
+            gcode = np.hstack([gcode, [line], cut(self)])
+
+            lines, pos = cut_lower(self)
+
+            gcode = np.hstack([gcode, lines])
+
+            line, pos = to_rapid(self, pos, zone = 'le')
+
+            gcode.append('M5')
+
+            gcode = np.hstack([ gcode, [line], rapid(self, pos, [-self.rapid_plane_dist, -self.rapid_plane_dist])[0] ])
+
+            gcode.append('M2')
+
+            self.gcode = gcode
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
