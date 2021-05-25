@@ -243,6 +243,6 @@ class Gcode:
 
             gcode = np.hstack([ gcode, [line], rapid(self, pos, [-self.rapid_plane_dist, -self.rapid_plane_dist])[0] ])
 
-            gcode.append('M2')
+            gcode.append('M2', '%')
 
             self.gcode = gcode
