@@ -97,7 +97,7 @@ class Gcode:
             raise ValueError("zone must be 'le', 'te' or 'ceil'")
 
     #can only be used after using to_rapid first
-    #moves along rapid plane to the desired position target = [left coord, right coord]
+    #moves along rapid plane (perimeter) to the desired position target = [left coord, right coord]
     #If zone == 'ceil', the target must be in chord-coordinates, otherwise target must be in height-coordinates
 
     def rapid(self, position, target, zone = "ceil"):
@@ -199,6 +199,7 @@ class Gcode:
         gcode.append('M5')
         return gcode, [self.ll[-1], self.rl[-1]]
 
+    #builds the gcode
     def build(self):
 
         splitter(self)
@@ -206,6 +207,9 @@ class Gcode:
         gcode = [start(self)]
 
         if self.cut_direction == 'te':
+
+            ll = np.flip(ll)
+            rl = np.flip(rl)
 
             line, pos = to_rapid(self, [0, self.foam_size[1], 0, self.foam_size[1]])
 
@@ -242,23 +246,3 @@ class Gcode:
             gcode.append('M2')
 
             self.gcode = gcode
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    file = start(name)
-    file = rapid(file, pts)
-    file = cut(file, pts, F, M)
-    file = end(file)
-    print(file)
