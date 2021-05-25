@@ -50,10 +50,10 @@ class Gcode:
         #blahblah something something (Write later)
         arr = self.Coords.get_coordinates()
 
-        self.lu = [ arr[0, 0, :-(-len(arr[0,0])//2)+1, arr[0, 1, :-(-len(arr[0,1])//2)+1 ]
-        self.ll = [ arr[0, 0, -(-len(arr[0,0])//2):, arr[0, 1, -(-len(arr[0,1])//2): ]
-        self.ru = [ arr[1, 0, :-(-len(arr[1,0])//2)+1, arr[1, 1, :-(-len(arr[1,1])//2)+1 ]
-        self.rl = [ arr[1, 0, -(-len(arr[1,0])//2):, arr[1, 1, -(-len(arr[1,1])//2): ]
+        self.lu = [ arr[0, 0, :(len(arr[0,0])//2)+1, arr[0, 1, :(len(arr[0,1])//2)+1 ]
+        self.ll = [ arr[0, 0, (len(arr[0,0])//2):, arr[0, 1, (len(arr[0,1])//2): ]
+        self.ru = [ arr[1, 0, :(len(arr[1,0])//2)+1, arr[1, 1, :(len(arr[1,1])//2)+1 ]
+        self.rl = [ arr[1, 0, (len(arr[1,0])//2):, arr[1, 1, (len(arr[1,1])//2): ]
 
     #starts a list containing all commands
     def start(self):
@@ -62,13 +62,89 @@ class Gcode:
     #steps through all the coordinates of the rapid movement
     #not happy with this approach but should work. it needs the last known coordinate, moves straight up to the ceiling height
     #does a horizontal movement above the target position and goes straight down to the target point.
-    def rapid(self, ceiling, start, target):
+    def rapid(self, start, target):
         gcode = ['G0']
 
         gcode.append(self.ax1+str(start[0])+self.ax2+str(ceiling)+self.ax3+str(start[2])+self.ax4+str(ceiling))
         gcode.append(self.ax1+str(target[0])+self.ax2+str(ceiling)+self.ax3+str(target[2])+self.ax4+str(ceiling))
         gcode.append(self.ax1+str(target[0])+ self.ax2+str(target[1])+self.ax3+str(target[2])+self.ax4+str(target[3]))
         return gcode
+
+    #moves to rapid planing, zone can be "le", "te" or "ceil" for the front, back and top. le and te will result in horizontal motion
+    #returns list of form [gcode line, final position]
+    def to_rapid(self, position, zone = "ceil"):
+        if zone == "ceil":
+            return ['G0' + ' ' + self.ax2 + str(self.foam_size[1]+self.rapid_plane_dist) + ' ' +  self.ax4 + str(self.foam_size[1]+self.rapid_plane_dist), [position[0], self.foam_size[1]+self.rapid_plane_dist, position[2], self.foam_size[1]+self.rapid_plane_dist] ]
+
+        else if zone == "le":
+            return ['G0' + ' ' + self.ax1 + str(-self.rapid_plane_dist) + ' ' +  self.ax3 + str(-self.rapid_plane_dist), [-self.rapid_plane_dist, position[1], -self.rapid_plane_dist, position[3]] ]
+
+        else if zone == "te":
+            return ['G0' + ' ' + self.ax1 + str(self.foam_size[0]+self.rapid_plane_dist) + ' ' +  self.ax3 + str(self.foam_size[0]+self.rapid_plane_dist), [self.foam_size[0]+self.rapid_plane_dist, position[1], self.foam_size[0]+self.rapid_plane_dist, position[3]] ]
+
+        else:
+            raise ValueError("zone must be 'le', 'te' or 'ceil'")
+
+    #can only be used after using to_rapid first
+    #moves along rapid plane to the desired position target = [left coord, right coord]
+    #If zone == 'ceil', the target must be in chord-coordinates, otherwise target must be in height-coordinates
+
+    def rapid(self, position, target, zone = "ceil"):
+
+        if not (position[0] = -self.rapid_plane_dist and position[2] = -self.rapid_plane_dist) or (position[0] = self.foam_size[0] + self.rapid_plane_dist and position[2] = self.foam_size[0] + self.rapid_plane_dist) or (position[1] = self.foam_size[1] + self.rapid_plane_dist and position[3] = self.foam_size[1] + self.rapid_plane_dist):
+
+            raise Exception("Machine not moved to rapid plane before using rapid(). Use to_rapid() before using rapid()")
+
+        gcode = []
+
+        if zone == "ceil":
+
+            if target < -self.rapid_plane_dist or target > self.foam_size[0] + self.rapid_plane_dist:
+                raise ValueError("target not within rapid plane")
+
+            if position[1] != self.foam_size[1]+self.rapid_plane_dist or position[3] != self.foam_size[1]+self.rapid_plane_dist:
+
+                gcode.append(self.ax2 + str(self.foam_size[1]+self.rapid_plane_dist) + ' ' +  self.ax4 + str(self.foam_size[1]+self.rapid_plane_dist)
+
+            gcode.append(self.ax1 + str(target[0]) + ' ' + self.ax3 + str(target[1]))
+            return [gcode, [target[0], self.foam_size[1]+self.rapid_plane_dist, target[1], self.foam_size[1]+self.rapid_plane_dist]]
+
+        else if zone == "le":
+
+            if target < 0 or target > self.foam_size[1] + self.rapid_plane_dist:
+                raise ValueError("target not within rapid plane")
+
+            if position[0] != -self.rapid_plane_dist or position[2] != -self.rapid_plane_dist:
+
+                if position[1] != self.foam_size[1]+self.rapid_plane_dist or position[3] != self.foam_size[1]+self.rapid_plane_dist:
+                    gcode.append(self.ax2 + str(self.foam_size[1]+self.rapid_plane_dist) + ' ' +  self.ax4 + str(self.foam_size[1]+self.rapid_plane_dist)
+
+                gcode.append(self.ax1 + str(-self.rapid_plane_dist) + ' ' +  self.ax3 + str(-self.rapid_plane_dist)
+
+            gcode.append(self.ax2 + str(target[0]) + ' ' +  self.ax4 + str(target[1])
+
+            return [gcode, [-self.rapid_plane_dist, target[0], -self.rapid_plane_dist, target[1]]]
+
+
+        else if zone == "te":
+
+            if target < 0 or target > self.foam_size[1] + self.rapid_plane_dist:
+                raise ValueError("target not within rapid plane")
+
+            if position[0] != self.foam_size[0] + self.rapid_plane_dist or position[2] != self.foam_size[0] + self.rapid_plane_dist:
+
+                if position[1] != self.foam_size[1]+self.rapid_plane_dist or position[3] != self.foam_size[1]+self.rapid_plane_dist:
+                    gcode.append(self.ax2 + str(self.foam_size[1]+self.rapid_plane_dist) + ' ' +  self.ax4 + str(self.foam_size[1]+self.rapid_plane_dist)
+
+                gcode.append(self.ax1 + str(self.foam_size[0] + self.rapid_plane_dist) + ' ' +  self.ax3 + str(self.foam_size[0] + self.rapid_plane_dist)
+
+            gcode.append(self.ax2 + str(target[0]) + ' ' +  self.ax4 + str(target[1])
+
+            return [gcode, [-self.rapid_plane_dist, target[0], -self.rapid_plane_dist, target[1]]]
+
+        else:
+            raise ValueError("zone must be 'le', 'te' or 'ceil'")
+
 
     #terminates the list
     def end(self):
@@ -86,10 +162,8 @@ class Gcode:
 
         #Modify feedrate depending on point density, only one side is considered since they are equivalent.
         dl = [np.sqrt((slef.lu[0,i+1] - self.lu[0,i])**2+(self.lu[1,i+1] - self.lu[1,i])**2) for i in range(len(lu[0])-1)]
-        #dr = [np.sqrt((self.ru[0,i+1] - self.ru[0,i])**2+(self.ru[1,i+1] - self.ru[1,i])**2) for i in range(len(ru[0])-1)]
 
         fl = [((dl[i]-min(dl))/(max(dl)-min(dl)*(self.F[1]-self.F[0]))+self.F[0]) for i in range(len(self.lu[0])-1)]
-        #fr = [((dr[i]-min(dr))/(max(dr)-min(dr)*(self.F[1]-self.F[0]))+self.F[0]) for i in range(len(self.lu[0])-1)]
 
         F = np.hstack([[fl[0]],fl]) #list of feedrates
 
