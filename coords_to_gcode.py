@@ -82,20 +82,22 @@ class Gcode:
         gcode = ['G1']
         lstart = self.lu[]
 
-
-
         #Modify feedrate depending on point density, only one side is considered since they are equivalent.
-        dl = [np.sqrt((slef.lu[0,i+1] - self.lu[0,i])**2+(self.lu[1,i+1] - self.lu[1,i])**2) for i in range(len(lu[0])-1)]
-        #dr = [np.sqrt((self.ru[0,i+1] - self.ru[0,i])**2+(self.ru[1,i+1] - self.ru[1,i])**2) for i in range(len(ru[0])-1)]
+        dl = [np.sqrt((slef.lu[0,i+1] - self.lu[0,i])**2+(self.lu[1,i+1] - self.lu[1,i])**2) for i in range(len(self.lu[0])-1)]
 
-        fl = [((dl[i]-min(dl))/(max(dl)-min(dl)*(self.F[1]-self.F[0]))+self.F[0]) for i in range(len(self.lu[0])-1)]
-        #fr = [((dr[i]-min(dr))/(max(dr)-min(dr)*(self.F[1]-self.F[0]))+self.F[0]) for i in range(len(self.lu[0])-1)]
+
+        #list ranging from 0 to 1
+        factor = [(i-min(dl))/(max(dl)-min(dl)) for i in dl]
+
+        fl = [i*(self.F[1]-self.F[0])+self.F[0] for i in factor]
+        ml = [i*(self.F[0]-self.F[1])+self.F[1] for i in factor]
 
         F = np.hstack([[fl[0]],fl]) #list of feedrates
+        M = np.hstack([[ml[0]],ml]) #list of cutting temperatures
 
-        for i in range(len(self.lu)): #make the gcode
+        for i in range(len(self.lu[0])): #make the gcode
 
-            line = str(self.ax1+str(self.lu[0,i])+ ' ' +self.ax2+str(self.lu[1,i])+ ' ' + self.ax3+str(self.ru[0,i])+' '+ self.ax4+str(self.ru[1,i])+ ' F' + str(F[i]) + ' M3 S' + str(self.M))
+            line = str(self.ax1+str(self.lu[0,i])+ ' ' +self.ax2+str(self.lu[1,i])+ ' ' + self.ax3+str(self.ru[0,i])+' '+ self.ax4+str(self.ru[1,i])+ ' F' + str(F[i]) + ' M3 S' + str(M[i]))
             gcode.append(line)
 
 
