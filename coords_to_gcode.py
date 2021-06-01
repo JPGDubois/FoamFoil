@@ -83,7 +83,7 @@ class Gcode:
         lstart = self.lu[]
 
         #Modify feedrate depending on point density, only one side is considered since they are equivalent.
-        dl = [np.sqrt((slef.lu[0,i+1] - self.lu[0,i])**2+(self.lu[1,i+1] - self.lu[1,i])**2) for i in range(len(self.lu[0])-1)]
+        dl = [np.sqrt((self.lu[0,i+1] - self.lu[0,i])**2+(self.lu[1,i+1] - self.lu[1,i])**2) for i in range(len(self.lu[0])-1)]
 
 
         #list ranging from 0 to 1

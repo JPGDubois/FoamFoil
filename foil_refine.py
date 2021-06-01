@@ -159,8 +159,9 @@ class Section:
                 #self.sweep = None
                 self.dihedral = [0,0]
                 self.yoffset = 0
-                self.r25 = [[0.25, 0, 0],[0.25, 0, 1]] #(reference points at 0.25c)
+                #self.r25 = [[0.25, 0, 0],[0.25, 0, 1]] #(reference points at 0.25c)
                 self.o = [0.25,0.25] #rotation centre (chord fraction)
+				self.y_clearance = 10
 
                 self.root = self.Airfoil(self.rootfoil)
                 self.tip = self.Airfoil(self.tipfoil)
@@ -193,11 +194,21 @@ class Section:
         def set_o(self, a,b):
                 self.o = [a,b]
 
+		def set_y_clearance(self, dist):
+				self.y_clearance = dist
+
         def get_side(self):
                 return self.rightside
 
         def get_r25(self):
                 return self.r25
+
+		def get_y_clearance(self):
+				return self.y_clearance
+
+		#use only after generating geometry
+		def get_tip_y(self):
+				return 0.75 * (self.tip.foil[1][len(self.tip.foil[1])//2]) + 0.25 * (self.tip.foil[1][0] + self.tip.foil[1][-1])/2
 
         def get_foils(self):
                 return self.root.foil, self.tip.foil
@@ -239,6 +250,10 @@ class Section:
                 root[1], root[2] = self.Airfoil.translate(self, root[1], root[2], self.yoffset, 0)
                 tip[1], tip[2] = self.Airfoil.translate(self, tip[1], tip[2], np.sin(math.radians(self.dihedral[0]))*(self.span[1]-self.span[0]) + self.yoffset, 0)
                 #add functionality for tracking r25 if o != 0.25
+
+				if any(y < 0 for y in root[1]):
+					root[1], root[2] = self.Airfoil.translate(self, root[1], root[2], -np.min(root[1]) + self.y_clearance, 0)
+	                tip[1], tip[2] = self.Airfoil.translate(self, tip[1], tip[2], -np.min(root[1]) + self.y_clearance, 0)
 
                 self.root.foil = root
                 self.tip.foil = tip
