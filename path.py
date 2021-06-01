@@ -49,8 +49,6 @@ class wing_path:
         self.ax2 = 'Y'
         self.ax3 = 'U'
         self.ax4 = 'Z'
-        self.M = [300,500]
-        self.F = [100,250]
         self.M = [300, 500]
         self.F = [100, 250]
 
@@ -62,7 +60,6 @@ class wing_path:
         self.ll = [ arr[0, 0, -(-len(arr[0, 0])//2):, arr[0, 1, -(-len(arr[0, 1])//2): ]
         self.ru = [ arr[1, 0, :-(-len(arr[1, 0])//2)+1, arr[1, 1, :-(-len(arr[1, 1])//2)+1 ]
         self.rl = [ arr[1, 0, -(-len(arr[1, 0])//2):, arr[1, 1, -(-len(arr[1, 1])//2): ]
-        return()
         return
 
     def rapid_upper(self):    # start, end [x, y, z, u]
@@ -140,7 +137,6 @@ class wing_path:
     def Start(self):
         self.gcode.append('%','('+self.name+') G21 G90 M5')
         return self.gcode
-        
 
     def end(self):
         self.gcode.append('M5','%')
