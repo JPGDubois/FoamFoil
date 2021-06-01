@@ -51,6 +51,8 @@ class wing_path:
         self.ax4 = 'Z'
         self.M = [300,500]
         self.F = [100,250]
+        self.M = [300, 500]
+        self.F = [100, 250]
 
     def split():
         # do stuf to get self.lu,ll,ru,rl
@@ -61,6 +63,7 @@ class wing_path:
         self.ru = [ arr[1, 0, :-(-len(arr[1, 0])//2)+1, arr[1, 1, :-(-len(arr[1, 1])//2)+1 ]
         self.rl = [ arr[1, 0, -(-len(arr[1, 0])//2):, arr[1, 1, -(-len(arr[1, 1])//2): ]
         return()
+        return
 
     def rapid_upper(self):    # start, end [x, y, z, u]
         start = self.o
@@ -138,6 +141,7 @@ class wing_path:
         self.gcode.append('%','('+self.name+') G21 G90 M5')
         return self.gcode
         
+
     def end(self):
         self.gcode.append('M5','%')
         return self.gcode
