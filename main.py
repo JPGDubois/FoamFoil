@@ -5,7 +5,7 @@ import scipy.interpolate as si
 import math
 from operator import itemgetter
 
-airfoilpath = setsmthplsss
+airfoilpath = 'Users\justi\OneDrive\Documenten\GitHub\FoamFoil\mh45.dat'
 
 foil = "C:\\"+str(airfoilpath)
 

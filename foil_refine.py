@@ -161,7 +161,7 @@ class Section:
                 self.yoffset = 0
                 #self.r25 = [[0.25, 0, 0],[0.25, 0, 1]] #(reference points at 0.25c)
                 self.o = [0.25,0.25] #rotation centre (chord fraction)
-				self.y_clearance = 10
+                self.y_clearance = 10
 
                 self.root = self.Airfoil(self.rootfoil)
                 self.tip = self.Airfoil(self.tipfoil)
@@ -194,8 +194,8 @@ class Section:
         def set_o(self, a,b):
                 self.o = [a,b]
 
-		def set_y_clearance(self, dist):
-				self.y_clearance = dist
+        def set_y_clearance(self, dist):
+                self.y_clearance = dist
 
         def get_side(self):
                 return self.rightside
@@ -203,12 +203,12 @@ class Section:
         def get_r25(self):
                 return self.r25
 
-		def get_y_clearance(self):
-				return self.y_clearance
+        def get_y_clearance(self):
+                return self.y_clearance
 
-		#use only after generating geometry
-		def get_tip_y(self):
-				return 0.75 * (self.tip.foil[1][len(self.tip.foil[1])//2]) + 0.25 * (self.tip.foil[1][0] + self.tip.foil[1][-1])/2
+        #use only after generating geometry
+        def get_tip_y(self):
+                return 0.75 * (self.tip.foil[1][len(self.tip.foil[1])//2]) + 0.25 * (self.tip.foil[1][0] + self.tip.foil[1][-1])/2
 
         def get_foils(self):
                 return self.root.foil, self.tip.foil
@@ -251,90 +251,90 @@ class Section:
                 tip[1], tip[2] = self.Airfoil.translate(self, tip[1], tip[2], np.sin(math.radians(self.dihedral[0]))*(self.span[1]-self.span[0]) + self.yoffset, 0)
                 #add functionality for tracking r25 if o != 0.25
 
-				if any(y < 0 for y in root[1]):
-					root[1], root[2] = self.Airfoil.translate(self, root[1], root[2], -np.min(root[1]) + self.y_clearance, 0)
-	                tip[1], tip[2] = self.Airfoil.translate(self, tip[1], tip[2], -np.min(root[1]) + self.y_clearance, 0)
-
+                if any(y < 0 for y in root[1]):
+                    root[1], root[2] = self.Airfoil.translate(self, root[1], root[2], -np.min(root[1]) + self.y_clearance, 0)
+                    tip[1], tip[2] = self.Airfoil.translate(self, tip[1], tip[2], -np.min(root[1]) + self.y_clearance, 0)
+                print(root)
                 self.root.foil = root
                 self.tip.foil = tip
 
 
 #Sec argument has to be an instance of Section
 class Coordinates:
-	def __init__(self, Sec):
+    def __init__(self, Sec):
 
-		self.Sec = Sec
+        self.Sec = Sec
 
-		#sets the root and tip foils to the correct side
-		if Section.get_side() == True:
-			self.l, self.r = Sec.get_foils()
-			self.rightside = True
-		else:
-			self.r, self.l = Sec.get_foils()
-			self.rightside = False
+        #sets the root and tip foils to the correct side
+        if Section.get_side() == True:
+            self.l, self.r = Sec.get_foils()
+            self.rightside = True
+        else:
+            self.r, self.l = Sec.get_foils()
+            self.rightside = False
 
-		self.machine_width = 300
+        self.machine_width = 300
 
-		#Machine coordinates
-		self.lc = None
-		self.rc = None
+        #Machine coordinates
+        self.lc = None
+        self.rc = None
 
-	def set_machine_width(self, width_mm):
-		self.machine_width = width_mm
+    def set_machine_width(self, width_mm):
+        self.machine_width = width_mm
 
-	def get_machine_width(self):
-		return self.machine_width
+    def get_machine_width(self):
+        return self.machine_width
 
-	def get_coordinates(self):
-		return self.lc, self.rc
+    def get_coordinates(self):
+        return self.lc, self.rc
 
-	def rotate(self, xarr,yarr,ox,oy,radsangle):
-		"""
-		Rotate a list of points counterclockwise by a given angle around a given origin.
+    def rotate(self, xarr,yarr,ox,oy,radsangle):
+        """
+        Rotate a list of points counterclockwise by a given angle around a given origin.
 
-		The angle should be given in radians.
-		"""
+        The angle should be given in radians.
+        """
 
-		return [ox + math.cos(-angle) * (xarr[i] - ox) - math.sin(-angle) * (yarr[i] - oy) for i in range(len(xarr))], [oy + math.sin(-angle) * (xarr[i] - ox) + math.cos(-angle) * (yarr[i] - oy) for i in range(len(yarr))]
+        return [ox + math.cos(-angle) * (xarr[i] - ox) - math.sin(-angle) * (yarr[i] - oy) for i in range(len(xarr))], [oy + math.sin(-angle) * (xarr[i] - ox) + math.cos(-angle) * (yarr[i] - oy) for i in range(len(yarr))]
 
-	def translate(self, arr,dist):
-		"""
-		Translate by xdist and ydist
-		"""
+    def translate(self, arr,dist):
+        """
+        Translate by xdist and ydist
+        """
 
-		return [x + dist for x in arr]
+        return [x + dist for x in arr]
 
-	def generate(self):
+    def generate(self):
 
-		#translates so the middle point of the 0.25c line is at x=0, z=0
-		z_center = (self.Sec.get_r25[0, 2] + self.Sec.get_r25[1, 2])/2
-		l_z = translate( self.l[2], -z_center)
-		r_z = translate( self.r[2], -z_center)
+        #translates so the middle point of the 0.25c line is at x=0, z=0
+        z_center = (self.Sec.get_r25[0, 2] + self.Sec.get_r25[1, 2])/2
+        l_z = translate( self.l[2], -z_center)
+        r_z = translate( self.r[2], -z_center)
 
-		x_center = (self.Sec.get_r25[0, 0] + self.Sec.get_r25[1, 0])/2
-		l_x = translate( self.l[0], -x_center)
-		r_x = translate( self.r[0], -x_center)
+        x_center = (self.Sec.get_r25[0, 0] + self.Sec.get_r25[1, 0])/2
+        l_x = translate( self.l[0], -x_center)
+        r_x = translate( self.r[0], -x_center)
 
-		#calculates sweep angle
-		if self.rightside == True:
-			x_sweep = np.arctan( (self.Sec.get_r25[1, 0] - self.Sec.get_r25[0, 0])/((self.Sec.get_r25[1, 2] - self.Sec.get_r25[0, 2])) )
-		else:
-			x_sweep = -np.arctan( (self.Sec.get_r25[1, 0] - self.Sec.get_r25[0, 0])/((self.Sec.get_r25[1, 2] - self.Sec.get_r25[0, 2])) )
+        #calculates sweep angle
+        if self.rightside == True:
+            x_sweep = np.arctan( (self.Sec.get_r25[1, 0] - self.Sec.get_r25[0, 0])/((self.Sec.get_r25[1, 2] - self.Sec.get_r25[0, 2])) )
+        else:
+            x_sweep = -np.arctan( (self.Sec.get_r25[1, 0] - self.Sec.get_r25[0, 0])/((self.Sec.get_r25[1, 2] - self.Sec.get_r25[0, 2])) )
 
-		#derotates sweep
-		l_x, l_z = rotate(self.l[0], self.l[2], 0, 0, -x_sweep)
-		r_x, r_z = rotate(self.r[0], self.r[2], 0, 0, -x_sweep)
+        #derotates sweep
+        l_x, l_z = rotate(self.l[0], self.l[2], 0, 0, -x_sweep)
+        r_x, r_z = rotate(self.r[0], self.r[2], 0, 0, -x_sweep)
 
-		l_y = self.l[1]
-		r_y = self.r[1]
+        l_y = self.l[1]
+        r_y = self.r[1]
 
-		#projects points to machine cutting left and right planes in x and then y
-		lc_x = [l_x[i] + ((self.machine_width/2) - l_z[i]) * (l_x[i] - r_x[i])/(l_z[i] - r_z[i]) for i in range(len(l_x))]
-		rc_x = [r_x[i] + ((self.machine_width/2) - r_z[i]) * (r_x[i] - l_x[i])/(r_z[i] - l_z[i]) for i in range(len(r_x))]
+        #projects points to machine cutting left and right planes in x and then y
+        lc_x = [l_x[i] + ((self.machine_width/2) - l_z[i]) * (l_x[i] - r_x[i])/(l_z[i] - r_z[i]) for i in range(len(l_x))]
+        rc_x = [r_x[i] + ((self.machine_width/2) - r_z[i]) * (r_x[i] - l_x[i])/(r_z[i] - l_z[i]) for i in range(len(r_x))]
 
-		lc_y = [l_y[i] + ((self.machine_width/2) - l_z[i]) * (l_y[i] - r_y[i])/(l_z[i] - r_z[i]) for i in range(len(l_y))]
-		rc_y = [r_y[i] + ((self.machine_width/2) - r_z[i]) * (r_y[i] - l_y[i])/(r_z[i] - l_z[i]) for i in range(len(l_y))]
+        lc_y = [l_y[i] + ((self.machine_width/2) - l_z[i]) * (l_y[i] - r_y[i])/(l_z[i] - r_z[i]) for i in range(len(l_y))]
+        rc_y = [r_y[i] + ((self.machine_width/2) - r_z[i]) * (r_y[i] - l_y[i])/(r_z[i] - l_z[i]) for i in range(len(l_y))]
 
-		#left and right machine coordinate datasets
-		self.lc = np.vstack((lc_x, lc_y))
-		self.rc = np.vstack((rc_x, rc_y))
+        #left and right machine coordinate datasets
+        self.lc = np.vstack((lc_x, lc_y))
+        self.rc = np.vstack((rc_x, rc_y))

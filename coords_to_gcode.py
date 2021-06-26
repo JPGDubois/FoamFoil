@@ -2,7 +2,7 @@
 Converts list of coords to gcode
 
 
-G0 = fast movement, goes to location as fast as possible
+G0 = fast movement, goes to location as fast as possible, not necessary straight line
 G1 = cutting at specified feedrate (In combination with F)
 F = feed rate in mm/min
 M5 = turn off hot wire
@@ -18,22 +18,29 @@ import pandas as pd
 
 class Gcode:
     def __init__(self, Coords):
+        """
+        This class takes in airfoil coordinates and produces the GCode required
+        to manufacture it on a wire cutting machine.
+        """
+        self.name = 'O0000'
 
-    #pts = np.random.rand(200,4)
+        # Horizontal-vertical position of side 1
+        self.ax1 = 'X'
+        self.ax2 = 'Y'
 
-    self.name = 'O0000'
-    self.ax1 = 'X'
-    self.ax2 = 'Y'
-    self.ax3 = 'U'
-    self.ax4 = 'Z'
-    self.M = [300,500]
-    self.F = [100,250]
-    self.rapid_plane_dist = 15
-    self.foam_size = [100, 50, 300] #chord, hight, span
-    self.Coords = Coords
+        # Horizontal-vertical position of side 2
+        self.ax3 = 'U'
+        self.ax4 = 'Z'
 
-    self.lu, self.ll, self.ru, self.rl = None
-    #pts = [[11,12,13,14],[21,22,23,24],[31,32,33,34]]
+        # Heat range
+        self.M = [300,500]
+        # Feed rate range
+        self.F = [100,250]
+
+        self.foam_size = [100, 50, 300] #chord, hight, span
+        self.Coords = Coords
+
+        self.lu, self.ll, self.ru, self.rl = None
 
     def rotate(self,x,y,ox,oy,angle):
             """
