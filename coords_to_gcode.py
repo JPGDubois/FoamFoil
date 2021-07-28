@@ -48,7 +48,7 @@ class Gcode:
     def get_cut_direction(self):
         return self.cut_direction
 
-    def get_gcode():
+    def get_gcode(self):
         return self.gcode
 
     def rotate(self,x,y,ox,oy,angle):
