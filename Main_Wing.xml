@@ -9,9 +9,9 @@
         <Name>Main Wing</Name>
         <Type>MAINWING</Type>
         <Color>
-            <red>0</red>
-            <green>166</green>
-            <blue>214</blue>
+            <red>228</red>
+            <green>103</green>
+            <blue>191</blue>
             <alpha>255</alpha>
         </Color>
         <Description></Description>
@@ -22,60 +22,47 @@
         <isDoubleFin>false</isDoubleFin>
         <isSymFin>false</isSymFin>
         <Inertia>
-            <Volume_Mass>  0.300</Volume_Mass>
+            <Volume_Mass>  0.000</Volume_Mass>
         </Inertia>
         <Sections>
             <Section>
                 <y_position>  0.000</y_position>
-                <Chord> 25.000</Chord>
+                <Chord> 20.000</Chord>
                 <xOffset>  0.000</xOffset>
-                <Dihedral>  0.000</Dihedral>
+                <Dihedral>  4.000</Dihedral>
                 <Twist>  0.000</Twist>
-                <x_number_of_panels>5</x_number_of_panels>
+                <x_number_of_panels>11</x_number_of_panels>
                 <x_panel_distribution>COSINE</x_panel_distribution>
-                <y_number_of_panels>6</y_number_of_panels>
+                <y_number_of_panels>11</y_number_of_panels>
                 <y_panel_distribution>COSINE</y_panel_distribution>
-                <Left_Side_FoilName>EJ/_/LR016</Left_Side_FoilName>
-                <Right_Side_FoilName>EJ/_/LR016</Right_Side_FoilName>
+                <Left_Side_FoilName>MH/_/60/_//_/10.08%</Left_Side_FoilName>
+                <Right_Side_FoilName>MH/_/60/_//_/10.08%</Right_Side_FoilName>
             </Section>
             <Section>
-                <y_position> 13.000</y_position>
-                <Chord> 22.000</Chord>
-                <xOffset> 10.400</xOffset>
-                <Dihedral> -3.500</Dihedral>
-                <Twist> -1.000</Twist>
-                <x_number_of_panels>5</x_number_of_panels>
-                <x_panel_distribution>COSINE</x_panel_distribution>
-                <y_number_of_panels>6</y_number_of_panels>
-                <y_panel_distribution>COSINE</y_panel_distribution>
-                <Left_Side_FoilName>E186/_//_/(10.27%)/_/Flap</Left_Side_FoilName>
-                <Right_Side_FoilName>E186/_//_/(10.27%)/_/Flap</Right_Side_FoilName>
-            </Section>
-            <Section>
-                <y_position> 26.000</y_position>
-                <Chord> 17.000</Chord>
-                <xOffset> 20.800</xOffset>
+                <y_position> 50.000</y_position>
+                <Chord> 15.000</Chord>
+                <xOffset>  5.000</xOffset>
                 <Dihedral>  0.000</Dihedral>
-                <Twist> -4.000</Twist>
-                <x_number_of_panels>5</x_number_of_panels>
+                <Twist> -3.000</Twist>
+                <x_number_of_panels>11</x_number_of_panels>
                 <x_panel_distribution>COSINE</x_panel_distribution>
-                <y_number_of_panels>6</y_number_of_panels>
+                <y_number_of_panels>11</y_number_of_panels>
                 <y_panel_distribution>COSINE</y_panel_distribution>
-                <Left_Side_FoilName>HS/_/522/_/Flap</Left_Side_FoilName>
-                <Right_Side_FoilName>HS/_/522/_/Flap</Right_Side_FoilName>
+                <Left_Side_FoilName>MH/_/45/_//_/9.85%</Left_Side_FoilName>
+                <Right_Side_FoilName>MH/_/45/_//_/9.85%</Right_Side_FoilName>
             </Section>
             <Section>
-                <y_position> 39.000</y_position>
-                <Chord> 12.000</Chord>
-                <xOffset> 31.200</xOffset>
+                <y_position>100.000</y_position>
+                <Chord> 15.000</Chord>
+                <xOffset>  5.000</xOffset>
                 <Dihedral>  0.000</Dihedral>
-                <Twist> -4.300</Twist>
+                <Twist> -3.000</Twist>
                 <x_number_of_panels>13</x_number_of_panels>
                 <x_panel_distribution>COSINE</x_panel_distribution>
                 <y_number_of_panels>5</y_number_of_panels>
                 <y_panel_distribution>UNIFORM</y_panel_distribution>
-                <Left_Side_FoilName>HS/_/522/_/Flap</Left_Side_FoilName>
-                <Right_Side_FoilName>HS/_/522/_/Flap</Right_Side_FoilName>
+                <Left_Side_FoilName>MH/_/45/_//_/9.85%</Left_Side_FoilName>
+                <Right_Side_FoilName>MH/_/45/_//_/9.85%</Right_Side_FoilName>
             </Section>
         </Sections>
     </wing>
