@@ -5,9 +5,10 @@ import scipy.interpolate as si
 import math
 from operator import itemgetter
 
-airfoilpath = 'Users\justi\OneDrive\Documenten\GitHub\FoamFoil\mh45.dat'
+airfoilpath = 'mh45.dat'
 
-foil = "C:\\"+str(airfoilpath)
+foil = airfoilpath
+#foil = "C:\\"+str(airfoilpath)
 
 df = pd.read_csv(foil,sep='\s+',skiprows=(1),header=(0))
 

@@ -90,6 +90,7 @@ class Section:
                         xle = new_lex[np.argmax(c)]
                         yle = new_ley[np.argmax(c)]
                         angle = -np.arctan((tey-yle)/(tex-xle))
+                        print("ANGLE")
                         print(angle)
 
                         #derotates
@@ -254,6 +255,7 @@ class Section:
                 if any(y < 0 for y in root[1]):
                     root[1], root[2] = self.Airfoil.translate(self, root[1], root[2], -np.min(root[1]) + self.y_clearance, 0)
                     tip[1], tip[2] = self.Airfoil.translate(self, tip[1], tip[2], -np.min(root[1]) + self.y_clearance, 0)
+                print("ROOT")
                 print(root)
                 self.root.foil = root
                 self.tip.foil = tip

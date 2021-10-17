@@ -27,6 +27,6 @@ wing = foil_refine.Section(brutefoil, brutefoil)
 wing.build()
 
 l, r = wing.get_foils()
-print(l)
+print("PLOT")
 plt.plot(l[0], l[1])
 plt.show()
