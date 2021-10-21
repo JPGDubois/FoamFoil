@@ -1,10 +1,12 @@
 import numpy as np
 from scipy import interpolate as si
-import os
 from scipy.linalg import expm, norm
+from scipy.stats import linregress
 import math
 from copy import deepcopy
+import os
 import pandas as pd
+import matplotlib.pyplot as plt
 
 xAxis = np.array([1, 0, 0])
 yAxis = np.array([0, 1, 0])
@@ -195,7 +197,7 @@ class Section:
 
         self.name = name
 
-        self.npoints = 200
+        self.npoints = 2000
 
         self.chord = [1, 1]
         self.span = [0, 1]
@@ -392,7 +394,15 @@ class Profile:
         self.rootCut = None
         self.tipCut = None
 
-        self.meshPoints = 100   # Number of points in y direction mesh
+        self.xOffsetLE = 100
+        self.xOffsetTE = 100
+        self.yOffsetLE = 20
+
+        self.rootTopPath = None
+        self.rootBottomPath = None
+        self.tipTopPath = None
+        self.tipBottomPath = None
+        self.origen = None
 
     def set_yspan(self, ySpan):
         self.ySpan = ySpan
@@ -432,3 +442,56 @@ class Profile:
 
     def get_profiles(self):
         return self.rootCut, self.tipCut
+
+    def paths(self):
+        # Get a 2d array for the cutting profile.
+        xRoot = self.rootCut[:-1,0]
+        yRoot = self.rootCut[:-1,2]
+        root = np.array([xRoot,yRoot]).T
+
+        xTip = self.tipCut[:-1,0]
+        yTip = self.tipCut[:-1,2]
+        tip = np.array([xTip,yTip]).T
+        #print('test0', self.rootCut)
+        #print("test1", root)
+        #print(np.size(root))
+        # Split the profile in a top and bottom side.
+        rootTop, rootBottom = np.split(root, 2, 0)
+        tipTop, tipBottom = np.split(tip, 2, 0)
+
+        origen = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1] + self.yOffsetLE])
+
+        a = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1]])
+        rootTop = np.append(rootTop, [a], 0)
+        rootBottom = np.append([a], rootBottom, 0)
+        tipTop = np.append(tipTop, [a], 0)
+        tipBottom = np.append([a], tipBottom, 0)
+
+        ar = np.array([rootTop[0][0] + self.xOffsetTE, rootTop[0][1]])
+        at = np.array([tipTop[0][0] + self.xOffsetTE, tipTop[0][1]])
+        arb = np.append([rootTop[0]] , [ar], 0)
+        atb = np.append([tipTop[0]] , [at], 0)
+
+        rootTop = np.append([ar], rootTop, 0)
+        tipTop = np.append([at], tipTop, 0)
+
+        rootBottom = np.append(rootBottom, arb, 0)
+        tipBottom = np.append(tipBottom, atb, 0)
+
+        # Flip bottom array such that it starts from trailing edge to leading edge
+        rootBottom = np.flip(rootBottom, 0)
+        tipBottom = np.flip(tipBottom, 0)
+
+        self.rootTopPath = rootTop
+        self.rootBottomPath = rootBottom
+        self.tipTopPath = tipTop
+        self.tipBottomPath = tipBottom
+        self.origen = origen
+
+        plt.plot(rootTop[:,0], rootTop[:,1], marker = '.')
+        plt.plot(rootBottom[:,0], rootBottom[:,1], marker = '.')
+        plt.show()
+
+    def coords_to_gcode(self):
+        # work in progress
+        return

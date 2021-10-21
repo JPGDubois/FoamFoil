@@ -122,3 +122,4 @@ for i in Sec:
     prof.cutting_planes()
     visualize_section(i, prof)
     #export_dat(prof)
+    prof.paths()
