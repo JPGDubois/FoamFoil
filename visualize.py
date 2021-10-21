@@ -30,8 +30,9 @@ def prompt_foil():
         x = points.to_numpy()[:, 0]
         y = np.zeros(len(x))
         z = points.to_numpy()[:, 1]
-        foilDict[foilName] = np.concatenate((x, y, z), axis = 1)
+        foilDict[foilName] = np.array([x, y, z]).T
     return foilDict
+
 
 def visualize_2d(dict):
     print(dict)
@@ -40,7 +41,7 @@ def visualize_2d(dict):
     for key in dict:
         print(dict[key])
         x = dict[key][:, 0]
-        y = dict[key][:, 1]
+        y = dict[key][:, 2]
         ax.scatter(x, y, label = key)
     ax.set_title('Airfoils')
     ax.set_xlim([0, 1])
@@ -48,14 +49,13 @@ def visualize_2d(dict):
     plt.show()
 
 
-def visualize_3d():
-    plt.rcParams["figure.figsize"] = [7.00, 3.50]
-    plt.rcParams["figure.autolayout"] = True
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    data = np.random.random(size=(3, 3, 3))
-    z, x, y = data.nonzero()
-    ax.scatter(x, y, z, c=z, alpha=1)
-    plt.show()
+    def visualize_3d(data):
+        plt.rcParams["figure.figsize"] = [7.00, 3.50]
+        plt.rcParams["figure.autolayout"] = True
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        data = np.random.random(size=(3, 3, 3))
+        ax.scatter(data[:,0],data[:,1],data[:,2], c='red', alpha=1)
+        plt.show()
 
 visualize_2d(prompt_foil())

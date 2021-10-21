@@ -1,0 +1,26 @@
+# Machine parameters document, all values are in metric; Distances are in mm,
+# velocities in mm/s and accelerations are in mm/s^2.
+# ~ means the parameters are not used in the current software.
+---
+#========================= Machine Parameters ==================================
+  unit: 1 # Factor to convert mm to desired unit.
+  dimensions: # Range of motion of the machine.
+    x_lenght: 600
+    y_length: 100
+    z_length: 1000
+  rapids: # Speed at which the rapid movements are performed.
+    x_rapid: 100
+    z_rapid: 100
+  accelerations: # Maximum machine acceleration.
+    x_acceleration: ~
+    y_acceleration: ~
+  cutting_parameters:
+    profile_1:
+      #Include functionality to set the cutting_voltage based on wire resistance
+      # and length.
+      name: 'EPS foam'
+      kerf: 1 # Diameter of the cut
+      feed: 100 # Speed of the cut
+      wire_resistance: ~
+      cutting_voltage: 300 # Value ranges from 0 to 1000.
+...
