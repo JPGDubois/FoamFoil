@@ -396,13 +396,25 @@ class Profile:
 
         self.xOffsetLE = 100
         self.xOffsetTE = 100
-        self.yOffsetLE = 20
+        self.yOffset = 20
 
         self.rootTopPath = None
         self.rootBottomPath = None
         self.tipTopPath = None
         self.tipBottomPath = None
-        self.origen = None
+        self.rootOrigen = None
+        self.tipOrigen = None
+
+        self.fileName = 'O0000'
+        self.ax1 = 'X'
+        self.ax2 = 'Y'
+        self.ax3 = 'U'
+        self.ax4 = 'Z'
+        self.temperature = 400
+        self.rapidFeed = 200
+        self.cuttingFeed = 100
+
+        self.gcode = ['%','('+self.fileName+') G21 G90']
 
     def set_yspan(self, ySpan):
         self.ySpan = ySpan
@@ -452,20 +464,25 @@ class Profile:
         xTip = self.tipCut[:-1,0]
         yTip = self.tipCut[:-1,2]
         tip = np.array([xTip,yTip]).T
-        #print('test0', self.rootCut)
-        #print("test1", root)
-        #print(np.size(root))
+
         # Split the profile in a top and bottom side.
         rootTop, rootBottom = np.split(root, 2, 0)
         tipTop, tipBottom = np.split(tip, 2, 0)
 
-        origen = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1] + self.yOffsetLE])
+        # Find highest point of profiles
+        rootMax = np.amax(rootTop[:,1])
+        tipMax = np.amax(tipTop[:,1])
+        yOffset = max(rootMax, tipMax) + self.yOffset
 
-        a = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1]])
-        rootTop = np.append(rootTop, [a], 0)
-        rootBottom = np.append([a], rootBottom, 0)
-        tipTop = np.append(tipTop, [a], 0)
-        tipBottom = np.append([a], tipBottom, 0)
+        self.rootOrigen = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1] + yOffset])
+        self.tipOrigen = np.array([tipTop[-1][0] - self.xOffsetLE, tipTop[-1][1] + yOffset])
+
+        ar = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1]])
+        at = np.array([tipTop[-1][0] - self.xOffsetLE, tipTop[-1][1]])
+        rootTop = np.append(rootTop, [ar], 0)
+        rootBottom = np.append([ar], rootBottom, 0)
+        tipTop = np.append(tipTop, [at], 0)
+        tipBottom = np.append([at], tipBottom, 0)
 
         ar = np.array([rootTop[0][0] + self.xOffsetTE, rootTop[0][1]])
         at = np.array([tipTop[0][0] + self.xOffsetTE, tipTop[0][1]])
@@ -486,12 +503,57 @@ class Profile:
         self.rootBottomPath = rootBottom
         self.tipTopPath = tipTop
         self.tipBottomPath = tipBottom
-        self.origen = origen
 
         plt.plot(rootTop[:,0], rootTop[:,1], marker = '.')
         plt.plot(rootBottom[:,0], rootBottom[:,1], marker = '.')
         plt.show()
 
-    def coords_to_gcode(self):
-        # work in progress
-        return
+    def coords_to_gcode(self, directory):
+
+        def numpy_to_line(root, tip):
+            return f'{self.ax1}{root[0]} {self.ax2}{root[1]} {self.ax3}{tip[0]} {self.ax4}{tip[1]}'
+
+        self.gcode.append(f'G1 F{self.rapidFeed}')
+
+        # Move to origen
+        self.gcode.append(numpy_to_line(self.rootOrigen, self.tipOrigen))
+
+        # Move horizontally untill x coordinate TE cut.
+        rootPoint = np.array([self.rootTopPath[0, 0], self.rootOrigen[1]])
+        tipPoint = np.array([self.tipTopPath[0, 0], self.tipOrigen[1]])
+        self.gcode.append(numpy_to_line(rootPoint, tipPoint))
+
+        # Top airfoil cut
+        self.gcode.append(f'G1 F{self.cuttingFeed} M3 S{self.temperature}')
+        for i in range(len(self.rootTopPath)):
+            rootPoint = np.array([self.rootTopPath[i, 0], self.rootTopPath[i, 1]])
+            tipPoint = np.array([self.tipTopPath[i, 0], self.tipTopPath[i, 1]])
+            self.gcode.append(numpy_to_line(rootPoint, tipPoint))
+
+        # Back to origen points
+        self.gcode.append(numpy_to_line(self.rootOrigen, self.tipOrigen))
+
+        self.gcode.append(f'G1 F{self.rapidFeed}')
+
+        # Move horizontally untill x coordinate TE cut.
+        rootPoint = np.array([self.rootTopPath[0, 0], self.rootOrigen[1]])
+        tipPoint = np.array([self.tipTopPath[0, 0], self.tipOrigen[1]])
+        self.gcode.append(numpy_to_line(rootPoint, tipPoint))
+
+        # Bottom airfoil cut
+        self.gcode.append(f'G1 F{self.cuttingFeed}')
+        for i in range(len(self.rootBottomPath)):
+            rootPoint = np.array([self.rootBottomPath[i, 0], self.rootBottomPath[i, 1]])
+            tipPoint = np.array([self.tipBottomPath[i, 0], self.tipBottomPath[i, 1]])
+            self.gcode.append(numpy_to_line(rootPoint, tipPoint))
+
+        # Back to origen points
+        self.gcode.append(numpy_to_line(self.rootOrigen, self.tipOrigen))
+
+        self.gcode.append(f'M5')
+        self.gcode.append(f'{self.ax1}0 {self.ax2}0 {self.ax3}0 {self.ax4}0')
+
+        fileName = f'{directory}/{self.fileName}.txt'
+        gcode = '\n'.join(self.gcode)
+        with open(fileName, 'w') as f:
+            f.write(gcode)

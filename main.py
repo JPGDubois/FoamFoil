@@ -123,3 +123,4 @@ for i in Sec:
     visualize_section(i, prof)
     #export_dat(prof)
     prof.paths()
+    prof.coords_to_gcode(dir)
