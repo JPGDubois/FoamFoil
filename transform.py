@@ -550,8 +550,9 @@ class Profile:
         # Back to origen points
         self.gcode.append(numpy_to_line(self.rootOrigen, self.tipOrigen))
 
-        self.gcode.append(f'M5')
+        self.gcode.append(f'G1 F{self.rapidFeed} M5')
         self.gcode.append(f'{self.ax1}0 {self.ax2}0 {self.ax3}0 {self.ax4}0')
+        self.gcode.append(f'%')
 
         fileName = f'{directory}/{self.fileName}.txt'
         gcode = '\n'.join(self.gcode)
