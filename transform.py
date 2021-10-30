@@ -369,6 +369,15 @@ class Section:
         self.root.rotate(zAxis, alpha)
         self.tip.rotate(zAxis, alpha)
 
+    def height_allignment(self, Sec):
+        # Find the difference in height of the tip qcpoint previous section and
+        # the current root qcpoint height.
+        diff = self.root.get_qcpoint()[1] - Sec.tip.get_qcpoint()[1]
+
+        # Move current section up by the difference
+        self.root.translate(zAxis, diff)
+        self.tip.translate(zAxis, diff)
+
     '''
     This function translates the wing so that it is located in a user specified positions
     '''
@@ -402,8 +411,8 @@ class Profile:
         self.rootBottomPath = None
         self.tipTopPath = None
         self.tipBottomPath = None
-        self.rootOrigen = None
-        self.tipOrigen = None
+        self.rootOrigin = None
+        self.tipOrigin = None
 
         self.fileName = 'O0000'
         self.ax1 = 'X'
@@ -414,7 +423,11 @@ class Profile:
         self.rapidFeed = 200
         self.cuttingFeed = 100
 
-        self.gcode = ['%','('+self.fileName+') G21 G90']
+        self.gcode = []
+
+    def set_filename(fileName):
+        self.fileName = fileName
+
 
     def set_yspan(self, ySpan):
         self.ySpan = ySpan
@@ -474,9 +487,15 @@ class Profile:
         tipMax = np.amax(tipTop[:,1])
         yOffset = max(rootMax, tipMax) + self.yOffset
 
-        self.rootOrigen = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1] + yOffset])
-        self.tipOrigen = np.array([tipTop[-1][0] - self.xOffsetLE, tipTop[-1][1] + yOffset])
+        # Set the respective origin a certain offset from leading edge up and to the left
+        self.rootOrigin = np.array([rootTop[-1][0] - self.xOffsetLE, yOffset])
+        self.tipOrigin = np.array([tipTop[-1][0] - self.xOffsetLE, yOffset])
 
+        # Allignment mode, the wire will be at the at the exact point where the foam needs to be positioned
+        self.rootAllign = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1] + rootMax])
+        self.tipAllign = np.array([tipTop[-1][0] - self.xOffsetLE, tipTop[-1][1] + tipMax])
+
+        # Make the lead in and lead out paths
         ar = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1]])
         at = np.array([tipTop[-1][0] - self.xOffsetLE, tipTop[-1][1]])
         rootTop = np.append(rootTop, [ar], 0)
@@ -504,23 +523,67 @@ class Profile:
         self.tipTopPath = tipTop
         self.tipBottomPath = tipBottom
 
+        # Plot the paths
         plt.plot(rootTop[:,0], rootTop[:,1], marker = '.')
         plt.plot(rootBottom[:,0], rootBottom[:,1], marker = '.')
+        plt.plot(tipTop[:,0], tipTop[:,1], marker = '.')
+        plt.plot(tipBottom[:,0], tipBottom[:,1], marker = '.')
         plt.show()
 
-    def coords_to_gcode(self, directory):
+    """
+    Converts list of coords to gcode
+    G0 = fast movement, goes to location as fast as possible
+    G1 = cutting at specified feedrate (In combination with F)
+    F = feed rate in mm/min
+    M5 = turn off hot wire
+    M3 = turn on hot wire (in combination with S)
+    S = percentage of voltage to hot wire
+    M0 = pause program until cycle start command (~)
+    ~ = cycle start
+    """
+    def coords_to_gcode(self, directory, mirror = False):
+        # Check if file name already exists, increment file name if needed.
+        fileName = f'{directory}/{self.fileName}.txt'
+        name = self.fileName
+        i = 1
+        while os.path.exists(fileName):
+            fileName = f'{directory}/{self.fileName}({i}).txt'
+            name = f'{self.fileName}({i})'
+            i += 1
 
+        if mirror:
+            fileName = f'{directory}/{self.fileName}_mirror.txt'
+            name = f'{self.fileName}_mirror'
+            i = 1
+            while os.path.exists(fileName):
+                fileName = f'{directory}/{self.fileName}_mirror({i}).txt'
+                name = f'{self.fileName}_mirror({i})'
+        self.gcode = ['%','('+self.fileName+') G21 G90']
+
+        # Converts the tip and root numpy arrays to machine readable gcode.
         def numpy_to_line(root, tip):
-            return f'{self.ax1}{root[0]} {self.ax2}{root[1]} {self.ax3}{tip[0]} {self.ax4}{tip[1]}'
+            if mirror:
+                return f'{self.ax1}{root[0]} {self.ax2}{root[1]} {self.ax3}{tip[0]} {self.ax4}{tip[1]}'
+            else:
+                return f'{self.ax1}{tip[0]} {self.ax2}{tip[1]} {self.ax3}{root[0]} {self.ax4}{root[1]}'
 
+
+        # Sets the speed for rapid movement.
         self.gcode.append(f'G1 F{self.rapidFeed}')
 
-        # Move to origen
-        self.gcode.append(numpy_to_line(self.rootOrigen, self.tipOrigen))
+        # Go to allignment position
+        self.gcode.append(numpy_to_line(self.rootAllign, self.tipAllign))
+
+        # Pause the machine to allow for precise positioning of the foam.
+        # The program will continue with a cycle start command.
+        self.gcode.append('M5 M0')
+
+        # Move straight up to origin
+        self.gcode.append(numpy_to_line(self.rootOrigin, self.tipOrigin))
 
         # Move horizontally untill x coordinate TE cut.
-        rootPoint = np.array([self.rootTopPath[0, 0], self.rootOrigen[1]])
-        tipPoint = np.array([self.tipTopPath[0, 0], self.tipOrigen[1]])
+        rootPoint = np.array([self.rootTopPath[0, 0], self.rootOrigin[1]])
+        tipPoint = np.array([self.tipTopPath[0, 0], self.tipOrigin[1]])
         self.gcode.append(numpy_to_line(rootPoint, tipPoint))
 
         # Top airfoil cut
@@ -530,14 +593,15 @@ class Profile:
             tipPoint = np.array([self.tipTopPath[i, 0], self.tipTopPath[i, 1]])
             self.gcode.append(numpy_to_line(rootPoint, tipPoint))
 
-        # Back to origen points
-        self.gcode.append(numpy_to_line(self.rootOrigen, self.tipOrigen))
+        # Back to origin points
+        self.gcode.append(numpy_to_line(self.rootOrigin, self.tipOrigin))
 
+        # Set rapid speed
         self.gcode.append(f'G1 F{self.rapidFeed}')
 
         # Move horizontally untill x coordinate TE cut.
-        rootPoint = np.array([self.rootTopPath[0, 0], self.rootOrigen[1]])
-        tipPoint = np.array([self.tipTopPath[0, 0], self.tipOrigen[1]])
+        rootPoint = np.array([self.rootTopPath[0, 0], self.rootOrigin[1]])
+        tipPoint = np.array([self.tipTopPath[0, 0], self.tipOrigin[1]])
         self.gcode.append(numpy_to_line(rootPoint, tipPoint))
 
         # Bottom airfoil cut
@@ -547,14 +611,19 @@ class Profile:
             tipPoint = np.array([self.tipBottomPath[i, 0], self.tipBottomPath[i, 1]])
             self.gcode.append(numpy_to_line(rootPoint, tipPoint))
 
-        # Back to origen points
-        self.gcode.append(numpy_to_line(self.rootOrigen, self.tipOrigen))
+        # Back to origin points
+        self.gcode.append(numpy_to_line(self.rootOrigin, self.tipOrigin))
 
+        # Set rapid speed
         self.gcode.append(f'G1 F{self.rapidFeed} M5')
+
+        # Go back to zero
         self.gcode.append(f'{self.ax1}0 {self.ax2}0 {self.ax3}0 {self.ax4}0')
+
+        # End gcode
         self.gcode.append(f'%')
 
-        fileName = f'{directory}/{self.fileName}.txt'
+        # Write gcode
         gcode = '\n'.join(self.gcode)
         with open(fileName, 'w') as f:
             f.write(gcode)

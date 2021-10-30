@@ -24,7 +24,7 @@ def visualize_foil(airfoils):
     ax.set_title('Airfoils')
     ax.set_xlim([0, 1])
     ax.set_ylim([-0.1, 0.2])
-    #plt.show()
+    plt.show()
 
 def visualize_section(Sec, Prof):
     plt.rcParams["figure.figsize"] = [7.00, 3.50]
@@ -123,4 +123,5 @@ for i in Sec:
     visualize_section(i, prof)
     #export_dat(prof)
     prof.paths()
-    prof.coords_to_gcode(dir)
+    prof.coords_to_gcode(dir, mirror = False)
+    prof.coords_to_gcode(dir, mirror = True)
