@@ -197,7 +197,7 @@ class Section:
 
         self.name = name
 
-        self.npoints = 2000
+        self.npoints = 200
 
         self.chord = [1, 1]
         self.span = [0, 1]
@@ -495,14 +495,18 @@ class Profile:
         self.rootAllign = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1] + rootMax])
         self.tipAllign = np.array([tipTop[-1][0] - self.xOffsetLE, tipTop[-1][1] + tipMax])
 
-        # Make the lead in and lead out paths
+        # Make the lead in paths.
         ar = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1]])
         at = np.array([tipTop[-1][0] - self.xOffsetLE, tipTop[-1][1]])
-        rootTop = np.append(rootTop, [ar], 0)
+        rootBottom = np.append([rootTop[-1]], rootBottom, 0)
         rootBottom = np.append([ar], rootBottom, 0)
-        tipTop = np.append(tipTop, [at], 0)
-        tipBottom = np.append([at], tipBottom, 0)
+        rootTop = np.append(rootTop, [ar], 0)
 
+        tipBottom = np.append([tipTop[-1]], tipBottom, 0)
+        tipBottom = np.append([at], tipBottom, 0)
+        tipTop = np.append(tipTop, [at], 0)
+
+        # Make the lead out paths.
         ar = np.array([rootTop[0][0] + self.xOffsetTE, rootTop[0][1]])
         at = np.array([tipTop[0][0] + self.xOffsetTE, tipTop[0][1]])
         arb = np.append([rootTop[0]] , [ar], 0)
@@ -524,10 +528,12 @@ class Profile:
         self.tipBottomPath = tipBottom
 
         # Plot the paths
-        plt.plot(rootTop[:,0], rootTop[:,1], marker = '.')
-        plt.plot(rootBottom[:,0], rootBottom[:,1], marker = '.')
-        plt.plot(tipTop[:,0], tipTop[:,1], marker = '.')
-        plt.plot(tipBottom[:,0], tipBottom[:,1], marker = '.')
+        fig = plt.figure('Airfoils', figsize=(12, 6))
+        ax = fig.add_subplot(111)
+        ax.plot(rootTop[:,0], rootTop[:,1], marker = '.')
+        ax.plot(rootBottom[:,0], rootBottom[:,1], marker = '.')
+        ax.plot(tipTop[:,0], tipTop[:,1], marker = '.')
+        ax.plot(tipBottom[:,0], tipBottom[:,1], marker = '.')
         plt.show()
 
     """
@@ -558,6 +564,7 @@ class Profile:
             while os.path.exists(fileName):
                 fileName = f'{directory}/{self.fileName}_mirror({i}).txt'
                 name = f'{self.fileName}_mirror({i})'
+                i += 1
         self.gcode = ['%','('+self.fileName+') G21 G90']
 
         # Converts the tip and root numpy arrays to machine readable gcode.

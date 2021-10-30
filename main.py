@@ -15,7 +15,6 @@ def visualize_foil(airfoils):
     ax = fig.add_subplot(111)
     for obj in airfoils:
         name = obj.get_name()
-        print(name)
         ofoil = obj.get_ofoil()
         x = ofoil[:, 0]
         y = ofoil[:, 2]
@@ -91,7 +90,6 @@ def read_xwimp(directory):
         wingName = f.readline()
     sections = []
     data = pd.read_csv(filePath, delim_whitespace = True, header = None, skiprows = 1).to_numpy()
-    print(data)
     sections = []
     for i in range(len(data)-1):
         sections.append(t.Section(f'Section_{i}'))
@@ -124,4 +122,6 @@ for i in Sec:
     #export_dat(prof)
     prof.paths()
     prof.coords_to_gcode(dir, mirror = False)
+
     prof.coords_to_gcode(dir, mirror = True)
+    print(f'Section {i} done')
