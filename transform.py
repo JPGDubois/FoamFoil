@@ -325,8 +325,8 @@ class Section:
     '''
     def build(self):
         # Refining the profiles.
-        #self.root.refine(self.npoints)
-        #self.tip.refine(self.npoints)
+        self.root.refine(self.npoints)
+        self.tip.refine(self.npoints)
 
         # Scaling the profiles to the correct chord length.
         self.root.scale(self.chord[0])
