@@ -86,7 +86,6 @@ class Airfoil:
         self.lepoint += translationVector
         self.qcpoint += translationVector
 
-
     '''
     The refine function (Originally written by Eduardo J. and modified) derotates
     and normalizes the foil and makes the point distribution uniform (equal amounts
@@ -196,7 +195,6 @@ class Airfoil:
         self.foil = np.array([u, v, w]).T
         self.qcpoint = np.array([0.25, 0., 0.])
         self.lepoint = np.array([0., 0., 0.])
-
 
 '''
 The section class is responsible to house all the properties related to a wing
@@ -354,7 +352,6 @@ class Section:
         self.root.rotate(xAxis, self.dihedral[0])
         self.tip.rotate(xAxis, self.dihedral[1])
 
-
     '''
     The allign_le and allign_qc functions rotate the section so the leading edge (le)
     or the rotation point (qc) are parallel to the y axis. This function allows wings
@@ -399,7 +396,6 @@ class Section:
         self.root.translate(translationVector, 1)
         self.tip.translate(translationVector, 1)
 
-
 '''
 This class is responisble to convert the section profiles to cutting profiles and
 to gcode. This class does depend on machine properties.
@@ -439,7 +435,6 @@ class Profile:
 
     def set_filename(fileName):
         self.fileName = fileName
-
 
     def set_yspan(self, ySpan):
         self.ySpan = ySpan
@@ -585,7 +580,6 @@ class Profile:
                 return f'{self.ax1}{root[0]} {self.ax2}{root[1]} {self.ax3}{tip[0]} {self.ax4}{tip[1]}'
             else:
                 return f'{self.ax1}{tip[0]} {self.ax2}{tip[1]} {self.ax3}{root[0]} {self.ax4}{root[1]}'
-
 
         # Sets the speed for rapid movement.
         self.gcode.append(f'G1 F{self.rapidFeed}')

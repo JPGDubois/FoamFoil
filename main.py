@@ -116,7 +116,7 @@ for i in Sec:
     i.allign_le()
     i.locate_section()
     prof = t.Profile(i)
-    prof.set_yspan(2000)
+    prof.set_yspan(400)
     prof.cutting_planes()
     visualize_section(i, prof)
     #export_dat(prof)
