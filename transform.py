@@ -113,22 +113,23 @@ class Airfoil:
         teu = (u[0] + u[-1])/2
         tev = (v[0] + v[-1])/2
 
-        c = []
-
         # Finds distance between every point of interpolated LE section and TE.
+        c = []
         for i in range(len(newLeu)):
             c.append( np.sqrt( (newLeu[i] - teu)**2 + (newLev[i] - tev)**2 ) )
 
         # Finds most distant point from TE (a.k.a. most accurate LE).
         ule = newLeu[np.argmax(c)]
         vle = newLev[np.argmax(c)]
-        angle = -np.arctan((tev-vle)/(teu-ule))
+
+        # Find the angle of the chord line
+        angle = np.arctan2(tev-vle, teu-ule)
 
         # Derotates the airfoil.
         self.rotate(yAxis, angle)
 
         # Translates so LE is at [0,0].
-        self.translate(np.array([-ule, 0, -vle]), 1.)
+        self.translate(np.array([-ule, 0, -vle]), 1)
 
         # Normalizes so that TE is at [1,0].
         self.scale(1)
@@ -136,6 +137,10 @@ class Airfoil:
         # Split foil into upper and lower curves.
         u = self.foil[:, 0]
         v = self.foil[:, 2]
+
+        # Normalise the trailing edge
+        u[0] = 1.0
+        u[-1] = 1.0
 
         # Splits foil into upper and lower curves.
         for i in range(len(u)):
@@ -165,6 +170,13 @@ class Airfoil:
         ut = np.flip(ut)
         vt = np.flip(vt)
 
+        # Make sure the u values are stricktly increasing and no duplicates.
+        top = np.column_stack((ut, vt))
+        lower = np.column_stack((ul, vl))
+
+        top = top[np.unique(top[:,0], return_index=True)[1]]
+        lower = lower[np.unique(lower[:,0], return_index=True)[1]]
+
         # Makes sure npoints is even.
         if npoints % 2 != 0:
                 npoints += 1
@@ -174,8 +186,8 @@ class Airfoil:
         uNew = [u/2 + 0.5 for u in np.sin(np.linspace(-(math.pi/2), (math.pi/2), int(npoints/2)))]
 
         # Akima interpolation is less susceptible to oscillations near endpoints.
-        vtNew = si.Akima1DInterpolator(ut, vt)(uNew)
-        vlNew = si.Akima1DInterpolator(ul, vl)(uNew)
+        vtNew = si.Akima1DInterpolator(top[:,0], top[:,1])(uNew)
+        vlNew = si.Akima1DInterpolator(lower[:,0], lower[:,1])(uNew)
 
         # Joins the two curves (excluding the LE from the lower curve to avoid duplicate) to form a single foil.
         u = np.concatenate( ( np.flip(uNew),uNew[1:] ), axis=None )

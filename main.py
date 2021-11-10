@@ -124,4 +124,4 @@ for i in Sec:
     prof.coords_to_gcode(dir, mirror = False)
 
     prof.coords_to_gcode(dir, mirror = True)
-    print(f'Section {i} done')
+    print(f'Section done')
