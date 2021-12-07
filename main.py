@@ -116,10 +116,11 @@ for i in Sec:
     i.allign_le()
     i.locate_section()
     prof = t.Profile(i)
-    prof.set_yspan(400)
+    prof.set_yspan(600)
     prof.cutting_planes()
     visualize_section(i, prof)
     #export_dat(prof)
+    #prof.kerf_compensation()
     prof.paths()
     prof.coords_to_gcode(dir, mirror = False)
 

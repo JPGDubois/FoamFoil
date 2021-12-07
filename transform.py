@@ -411,8 +411,8 @@ class Profile:
         self.rootCut = None
         self.tipCut = None
 
-        self.xOffsetLE = 100
-        self.xOffsetTE = 100
+        self.xOffsetLE = 10
+        self.xOffsetTE = 10
         self.yOffset = 20
 
         self.rootTopPath = None
@@ -422,14 +422,15 @@ class Profile:
         self.rootOrigin = None
         self.tipOrigin = None
 
-        self.fileName = 'O0000'
+        self.fileName = 'test'
         self.ax1 = 'X'
         self.ax2 = 'Y'
         self.ax3 = 'U'
         self.ax4 = 'Z'
-        self.temperature = 400
-        self.rapidFeed = 200
-        self.cuttingFeed = 100
+        self.temperature = 500
+        self.rapidFeed = 1200
+        self.cuttingFeed = 230
+        self.kerf = 10
 
         self.gcode = []
 
@@ -439,8 +440,32 @@ class Profile:
     def set_yspan(self, ySpan):
         self.ySpan = ySpan
 
+    def set_xoffset_le(self, xOffsetLE):
+        self.xOffsetLE = xOffsetLE
+
+    def set_xoffset_te(self, xOffsetTE):
+        self.xOffsetTE = xOffsetTE
+
+    def set_temperature(self, temperature):
+        self.temperature = temperature
+
+    def set_rapid_feed(self, rapidFeed):
+        self.rapidFeed = rapidFeed
+
+    def set_cutting_feed(self, cuttingFeed):
+        self.cuttingFeed = cuttingFeed
+
+    def set_yoffset(self, yOffset):
+        self.yOffset = yOffset
+
+    def set_kerf(self, kerf):
+        self.kerf = kerf
+
     def get_yspan(self):
         return self.ySpan
+
+    def get_profiles(self):
+        return self.rootCut, self.tipCut
 
     def project(self, plane):
         # This function find the projected shapes intersecting with the cutting planes.
@@ -469,20 +494,22 @@ class Profile:
         return np.array([xProjection, y, zProjection]).T
 
     def cutting_planes(self):
-        self.rootCut = self.project(0)
-        self.tipCut = self.project(self.ySpan)
+        self.rootCut = self.project(0)[:-1,:]
+        self.tipCut = self.project(self.ySpan)[:-1,:]
 
-    def get_profiles(self):
-        return self.rootCut, self.tipCut
+    def kerf_compensation(self):
+        # Todo
+        # Compensate for the thickness of the wire.
+        return
 
     def paths(self):
         # Get a 2d array for the cutting profile.
-        xRoot = self.rootCut[:-1,0]
-        yRoot = self.rootCut[:-1,2]
+        xRoot = self.rootCut[:,0]
+        yRoot = self.rootCut[:,2]
         root = np.array([xRoot,yRoot]).T
 
-        xTip = self.tipCut[:-1,0]
-        yTip = self.tipCut[:-1,2]
+        xTip = self.tipCut[:,0]
+        yTip = self.tipCut[:,2]
         tip = np.array([xTip,yTip]).T
 
         # Split the profile in a top and bottom side.
@@ -503,29 +530,30 @@ class Profile:
         self.tipAllign = np.array([tipTop[-1][0] - self.xOffsetLE, tipTop[-1][1] + tipMax])
 
         # Make the lead in paths.
-        ar = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1]])
-        at = np.array([tipTop[-1][0] - self.xOffsetLE, tipTop[-1][1]])
-        rootBottom = np.append([rootTop[-1]], rootBottom, 0)
-        rootBottom = np.append([ar], rootBottom, 0)
-        rootTop = np.append(rootTop, [ar], 0)
+        tr = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1]])
+        tt = np.array([tipTop[-1][0] - self.xOffsetLE, tipTop[-1][1]])
+        br = np.array([rootBottom[0][0] - self.xOffsetLE, rootBottom[0][1]])
+        bt = np.array([tipBottom[0][0] - self.xOffsetLE, tipBottom[0][1]])
 
-        tipBottom = np.append([tipTop[-1]], tipBottom, 0)
-        tipBottom = np.append([at], tipBottom, 0)
-        tipTop = np.append(tipTop, [at], 0)
+        rootBottom = np.append([br], rootBottom, 0)
+        rootTop = np.append(rootTop, [tr], 0)
+
+        tipBottom = np.append([bt], tipBottom, 0)
+        tipTop = np.append(tipTop, [tt], 0)
 
         # Make the lead out paths.
-        ar = np.array([rootTop[0][0] + self.xOffsetTE, rootTop[0][1]])
-        at = np.array([tipTop[0][0] + self.xOffsetTE, tipTop[0][1]])
-        arb = np.append([rootTop[0]] , [ar], 0)
-        atb = np.append([tipTop[0]] , [at], 0)
+        tr = np.array([rootTop[0][0] + self.xOffsetTE, rootTop[0][1]])
+        tt = np.array([tipTop[0][0] + self.xOffsetTE, tipTop[0][1]])
+        br = np.array([rootBottom[-1][0] + self.xOffsetTE, rootBottom[-1][1]])
+        bt = np.array([tipBottom[-1][0] + self.xOffsetTE, tipBottom[-1][1]])
 
-        rootTop = np.append([ar], rootTop, 0)
-        tipTop = np.append([at], tipTop, 0)
+        rootTop = np.append([tr], rootTop, 0)
+        tipTop = np.append([tt], tipTop, 0)
 
-        rootBottom = np.append(rootBottom, arb, 0)
-        tipBottom = np.append(tipBottom, atb, 0)
+        rootBottom = np.append(rootBottom, [br], 0)
+        tipBottom = np.append(tipBottom, [bt], 0)
 
-        # Flip bottom array such that it starts from trailing edge to leading edge
+        # Flip bottom array such that it starts from trailing edge to leading edge.
         rootBottom = np.flip(rootBottom, 0)
         tipBottom = np.flip(tipBottom, 0)
 
