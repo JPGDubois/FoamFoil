@@ -120,9 +120,8 @@ for i in Sec:
     prof.cutting_planes()
     visualize_section(i, prof)
     #export_dat(prof)
-    #prof.kerf_compensation()
     prof.paths()
-    prof.coords_to_gcode(dir, mirror = False)
+    #prof.coords_to_gcode(dir, mirror = False)
 
-    prof.coords_to_gcode(dir, mirror = True)
+    #prof.coords_to_gcode(dir, mirror = True)
     print(f'Section done')

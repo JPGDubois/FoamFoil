@@ -196,6 +196,8 @@ class Airfoil:
         self.qcpoint = np.array([0.25, 0., 0.])
         self.lepoint = np.array([0., 0., 0.])
 
+
+
 '''
 The section class is responsible to house all the properties related to a wing
 section. A wing section is the lofted body between two aifoil profiles. This class
@@ -222,7 +224,7 @@ class Section:
         self.tipName = None
 
         self.zOffsetRoot = 20
-        self.yOffsetRoot = 100
+        self.yOffsetRoot = 30
         self.xOffsetRoot = 100
 
     '''
@@ -347,6 +349,12 @@ class Section:
         # Translating both airfoils for wing sweep.
         self.root.translate(xAxis, self.sweep[0])
         self.tip.translate(xAxis, self.sweep[1])
+
+        # Normalise the position of the airfoil such the LE root is alligned with the origen
+        self.root.translate(yAxis, -self.span[0])
+        self.tip.translate(yAxis, -self.span[0])
+        self.tip.translate(xAxis, -self.sweep[0])
+        self.root.translate(xAxis, -self.sweep[0])
 
         # Rotating both foils for dihedral.
         self.root.rotate(xAxis, self.dihedral[0])
@@ -497,11 +505,6 @@ class Profile:
         self.rootCut = self.project(0)[:-1,:]
         self.tipCut = self.project(self.ySpan)[:-1,:]
 
-    def kerf_compensation(self):
-        # Todo
-        # Compensate for the thickness of the wire.
-        return
-
     def paths(self):
         # Get a 2d array for the cutting profile.
         xRoot = self.rootCut[:,0]
@@ -553,6 +556,7 @@ class Profile:
         rootBottom = np.append(rootBottom, [br], 0)
         tipBottom = np.append(tipBottom, [bt], 0)
 
+
         # Flip bottom array such that it starts from trailing edge to leading edge.
         rootBottom = np.flip(rootBottom, 0)
         tipBottom = np.flip(tipBottom, 0)
@@ -561,6 +565,7 @@ class Profile:
         self.rootBottomPath = rootBottom
         self.tipTopPath = tipTop
         self.tipBottomPath = tipBottom
+
 
         # Plot the paths
         fig = plt.figure('Airfoils', figsize=(12, 6))
