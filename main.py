@@ -1,10 +1,11 @@
+import sys
 import tkinter as tk
 from tkinter import filedialog as fd
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import math
-
+import yaml
 import transform as t
 
 '''
@@ -85,7 +86,8 @@ def read_xwimp(directory):
         initialdir=directory,
         filetypes=fileTypes
         )
-
+    if filePath == '':
+        sys.exit('no file selected')
     with open(filePath, 'r') as f:
         wingName = f.readline()
     sections = []
@@ -106,8 +108,22 @@ def get_project_folder(default = '/'):
         title='Select file path',
         initialdir=default,
         )
+    if directory == '':
+        sys.exit('no folder selected')
     return directory
 
+def set_preset(prof, i = 0):
+    with open('preset.yaml') as file:
+        try:
+            presets = yaml.safe_load(file)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+        key = list(presets.keys())[0]
+        prof.set_cutting_voltage(presets[key]['cuttingVoltage'])
+        prof.set_cutting_feed(presets[key]['cuttingFeed'])
+        prof.set_kerf(presets[key]['kerf'])
+        print(f'Preset {presets[key]["name"]} selected')
 
 dir = get_project_folder('C:\\Users\\justi\\Documents\\GitHub\\FoamFoil')
 Sec = read_xwimp(dir)
@@ -116,6 +132,7 @@ for i in Sec:
     i.allign_le()
     i.locate_section()
     prof = t.Profile(i)
+    set_preset(prof, 0)
     prof.set_yspan(600)
     prof.cutting_planes()
     visualize_section(i, prof)

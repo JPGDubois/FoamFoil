@@ -8,11 +8,11 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# Definition of rotation axis.
 xAxis = np.array([1, 0, 0])
 yAxis = np.array([0, 1, 0])
 zAxis = np.array([0, 0, 1])
 
-unit = 1000
 
 '''
 The Airfoil class contains all operation functions that can be performed on
@@ -209,7 +209,8 @@ class Section:
 
         self.name = name
 
-        self.npoints = 200
+        self.npoints = 200  # Number of points on airfoil surface.
+        self.unit = 1000    # Multiplier for imported values.
 
         self.chord = [1, 1]
         self.span = [0, 1]
@@ -231,17 +232,17 @@ class Section:
     The set_ functions are used to configure the properties of the Section
     '''
     def set_root(self, xwimpLine):
-        self.span[0] = unit*xwimpLine[0]
-        self.chord[0] = unit*xwimpLine[1]
-        self.sweep[0] = unit*xwimpLine[2]
+        self.span[0] = self.unit*xwimpLine[0]
+        self.chord[0] = self.unit*xwimpLine[1]
+        self.sweep[0] = self.unit*xwimpLine[2]
         self.dihedral[0] = math.radians(xwimpLine[3])
         self.twist[0] = math.radians(xwimpLine[4])
         self.rootName = xwimpLine[9]
 
     def set_tip(self, xwimpLine):
-        self.span[1] = unit*xwimpLine[0]
-        self.chord[1] = unit*xwimpLine[1]
-        self.sweep[1] = unit*xwimpLine[2]
+        self.span[1] = self.unit*xwimpLine[0]
+        self.chord[1] = self.unit*xwimpLine[1]
+        self.sweep[1] = self.unit*xwimpLine[2]
         self.dihedral[1] = math.radians(xwimpLine[3])
         self.twist[1] = math.radians(xwimpLine[4])
         self.tipName = xwimpLine[9]
@@ -386,6 +387,10 @@ class Section:
         self.root.rotate(zAxis, alpha)
         self.tip.rotate(zAxis, alpha)
 
+    '''
+    Change the height of the current section to match the height of the previous section.
+    This is helpfull in manufacturing.
+    '''
     def height_allignment(self, Sec):
         # Find the difference in height of the tip qcpoint previous section and
         # the current root qcpoint height.
@@ -412,17 +417,23 @@ class Profile:
 
     def __init__(self, Sec):
 
-        self.Sec = Sec  # Must be an instance of Section
+        self.Sec = Sec  # Must be an instance of Section.
 
+        #Machine Properties.
+        self.x_lenght = 600
+        self.z_lenght = 100
         self.ySpan = 1000 # Distance between 2d movement platforms in the y direction.
 
+        # Profiles to cut.
         self.rootCut = None
         self.tipCut = None
 
+        # Boundaries of the cut.
         self.xOffsetLE = 10
         self.xOffsetTE = 10
         self.yOffset = 20
 
+        # Separated paths.
         self.rootTopPath = None
         self.rootBottomPath = None
         self.tipTopPath = None
@@ -430,17 +441,19 @@ class Profile:
         self.rootOrigin = None
         self.tipOrigin = None
 
+        # Gcode file properties.
         self.fileName = 'test'
         self.ax1 = 'X'
         self.ax2 = 'Y'
         self.ax3 = 'U'
         self.ax4 = 'Z'
-        self.temperature = 500
+        self.gcode = []
+
+        # Cutting properties.
+        self.cuttingVoltage = 300
         self.rapidFeed = 1200
         self.cuttingFeed = 230
         self.kerf = 10
-
-        self.gcode = []
 
     def set_filename(fileName):
         self.fileName = fileName
@@ -454,8 +467,8 @@ class Profile:
     def set_xoffset_te(self, xOffsetTE):
         self.xOffsetTE = xOffsetTE
 
-    def set_temperature(self, temperature):
-        self.temperature = temperature
+    def set_cutting_voltage(self, cuttingVoltage):
+        self.cuttingVoltage = cuttingVoltage
 
     def set_rapid_feed(self, rapidFeed):
         self.rapidFeed = rapidFeed
@@ -475,10 +488,13 @@ class Profile:
     def get_profiles(self):
         return self.rootCut, self.tipCut
 
+    '''
+    This function find the projected shapes intersecting with a plane.
+    This is achieved by drawing a straign line throuhg the n-th point on both the
+    tip and root foil and finding the intersection of that line with the cutting planes.
+    '''
     def project(self, plane):
-        # This function find the projected shapes intersecting with the cutting planes.
-        # This is achieved by drawing a straign line throuhg the n-th point on both the
-        # tip and root foil and finding the intersection of that line with the cutting planes.
+
 
         # Get airfoil coordinates
         rootFoil, tipFoil = self.Sec.get_foils()
@@ -501,10 +517,16 @@ class Profile:
         # Store the coordinates in two numpy arrays
         return np.array([xProjection, y, zProjection]).T
 
+    '''
+    Project the wing geometry on the cutting planes.
+    '''
     def cutting_planes(self):
         self.rootCut = self.project(0)[:-1,:]
         self.tipCut = self.project(self.ySpan)[:-1,:]
 
+    '''
+    Split the geometry into distinct parts that can be cut.
+    '''
     def paths(self):
         # Get a 2d array for the cutting profile.
         xRoot = self.rootCut[:,0]
@@ -528,9 +550,9 @@ class Profile:
         self.rootOrigin = np.array([rootTop[-1][0] - self.xOffsetLE, yOffset])
         self.tipOrigin = np.array([tipTop[-1][0] - self.xOffsetLE, yOffset])
 
-        # Allignment mode, the wire will be at the at the exact point where the foam needs to be positioned
-        self.rootAllign = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1] + rootMax])
-        self.tipAllign = np.array([tipTop[-1][0] - self.xOffsetLE, tipTop[-1][1] + tipMax])
+        # Allignment mode, the wire will be at the at the exact point where the foam needs to be positioned.
+        self.rootAllign = np.array([rootTop[-1][0] - self.xOffsetLE, rootMax])
+        self.tipAllign = np.array([tipTop[-1][0] - self.xOffsetLE, tipMax])
 
         # Make the lead in paths.
         tr = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1]])
@@ -566,7 +588,6 @@ class Profile:
         self.tipTopPath = tipTop
         self.tipBottomPath = tipBottom
 
-
         # Plot the paths
         fig = plt.figure('Airfoils', figsize=(12, 6))
         ax = fig.add_subplot(111)
@@ -575,6 +596,7 @@ class Profile:
         ax.plot(tipTop[:,0], tipTop[:,1], marker = '.')
         ax.plot(tipBottom[:,0], tipBottom[:,1], marker = '.')
         plt.show()
+
 
     """
     Converts list of coords to gcode
@@ -617,15 +639,17 @@ class Profile:
         # Sets the speed for rapid movement.
         self.gcode.append(f'G1 F{self.rapidFeed}')
 
-        # Go to allignment position
-        self.gcode.append(numpy_to_line(self.rootAllign, self.tipAllign))
-
+        # Go to allignment position.
         # Pause the machine to allow for precise positioning of the foam.
         # The program will continue with a cycle start command.
+        self.gcode.append(numpy_to_line(self.rootAllign, self.tipAllign))
         self.gcode.append('M5 M0')
 
-        # Move straight up to origin
+        # Move straight up to origin.
+        # Pause the machine to allow for checking the height.
+        # The program will continue with a cycle start command.
         self.gcode.append(numpy_to_line(self.rootOrigin, self.tipOrigin))
+        self.gcode.append('M5 M0')
 
         # Move horizontally untill x coordinate TE cut.
         rootPoint = np.array([self.rootTopPath[0, 0], self.rootOrigin[1]])
@@ -633,14 +657,15 @@ class Profile:
         self.gcode.append(numpy_to_line(rootPoint, tipPoint))
 
         # Top airfoil cut
-        self.gcode.append(f'G1 F{self.cuttingFeed} M3 S{self.temperature}')
+        self.gcode.append(f'G1 F{self.cuttingFeed} M3 S{self.cuttingVoltage}')
         for i in range(len(self.rootTopPath)):
             rootPoint = np.array([self.rootTopPath[i, 0], self.rootTopPath[i, 1]])
             tipPoint = np.array([self.tipTopPath[i, 0], self.tipTopPath[i, 1]])
             self.gcode.append(numpy_to_line(rootPoint, tipPoint))
 
-        # Back to origin points
+        # Back to origin points and pause machine for removal top foam.
         self.gcode.append(numpy_to_line(self.rootOrigin, self.tipOrigin))
+        self.gcode.append('M5 M0')
 
         # Set rapid speed
         self.gcode.append(f'G1 F{self.rapidFeed}')
@@ -650,8 +675,8 @@ class Profile:
         tipPoint = np.array([self.tipTopPath[0, 0], self.tipOrigin[1]])
         self.gcode.append(numpy_to_line(rootPoint, tipPoint))
 
-        # Bottom airfoil cut
-        self.gcode.append(f'G1 F{self.cuttingFeed}')
+        # Bottom airfoil cut.
+        self.gcode.append(f'G1 F{self.cuttingFeed} M3 S{self.cuttingVoltage}')
         for i in range(len(self.rootBottomPath)):
             rootPoint = np.array([self.rootBottomPath[i, 0], self.rootBottomPath[i, 1]])
             tipPoint = np.array([self.tipBottomPath[i, 0], self.tipBottomPath[i, 1]])
@@ -660,16 +685,16 @@ class Profile:
         # Back to origin points
         self.gcode.append(numpy_to_line(self.rootOrigin, self.tipOrigin))
 
-        # Set rapid speed
+        # Set rapid speed and turn of wire.
         self.gcode.append(f'G1 F{self.rapidFeed} M5')
 
-        # Go back to zero
+        # Go back to zero.
         self.gcode.append(f'{self.ax1}0 {self.ax2}0 {self.ax3}0 {self.ax4}0')
 
-        # End gcode
+        # End gcode.
         self.gcode.append(f'%')
 
-        # Write gcode
+        # Write gcode to file.
         gcode = '\n'.join(self.gcode)
         with open(fileName, 'w') as f:
             f.write(gcode)

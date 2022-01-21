@@ -14,13 +14,7 @@
   accelerations: # Maximum machine acceleration.
     x_acceleration: ~
     y_acceleration: ~
-  cutting_parameters:
-    profile_1:
-      #Include functionality to set the cutting_voltage based on wire resistance
-      # and length.
-      name: 'EPS foam'
-      kerf: 1 # Diameter of the cut
-      feed: 100 # Speed of the cut
-      wire_resistance: ~
-      cutting_voltage: 300 # Value ranges from 0 to 1000.
+  wire:
+    resistance: 5.65 # Resistance per unit lenght of the cutting wire in ohm.
+
 ...
