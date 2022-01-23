@@ -453,7 +453,7 @@ class Profile:
         self.cuttingVoltage = 300
         self.rapidFeed = 1200
         self.cuttingFeed = 230
-        self.kerf = 10
+        self.kerf = 0
 
     def set_filename(fileName):
         self.fileName = fileName
@@ -541,6 +541,13 @@ class Profile:
         rootTop, rootBottom = np.split(root, 2, 0)
         tipTop, tipBottom = np.split(tip, 2, 0)
 
+        # Compensate for kerf width
+        rootTop = self.kerf_compensation(rootTop)
+        rootBottom = self.kerf_compensation(rootBottom)
+
+        tipTop = self.kerf_compensation(tipTop)
+        tipBottom = self.kerf_compensation(tipBottom)
+
         # Find highest point of profiles
         rootMax = np.amax(rootTop[:,1])
         tipMax = np.amax(tipTop[:,1])
@@ -578,7 +585,6 @@ class Profile:
         rootBottom = np.append(rootBottom, [br], 0)
         tipBottom = np.append(tipBottom, [bt], 0)
 
-
         # Flip bottom array such that it starts from trailing edge to leading edge.
         rootBottom = np.flip(rootBottom, 0)
         tipBottom = np.flip(tipBottom, 0)
@@ -591,12 +597,42 @@ class Profile:
         # Plot the paths
         fig = plt.figure('Airfoils', figsize=(12, 6))
         ax = fig.add_subplot(111)
-        ax.plot(rootTop[:,0], rootTop[:,1], marker = '.')
-        ax.plot(rootBottom[:,0], rootBottom[:,1], marker = '.')
-        ax.plot(tipTop[:,0], tipTop[:,1], marker = '.')
-        ax.plot(tipBottom[:,0], tipBottom[:,1], marker = '.')
+        ax.plot(rootTop[:,0], rootTop[:,1], marker = '.', color = 'r')
+        ax.plot(rootBottom[:,0], rootBottom[:,1], marker = '.', color = 'r')
+        ax.plot(tipTop[:,0], tipTop[:,1], marker = '.', color = 'b')
+        ax.plot(tipBottom[:,0], tipBottom[:,1], marker = '.', color = 'b')
+
+        ax.plot(xRoot, yRoot, color = 'k')
+        ax.plot(xTip, yTip, color = 'k')
         plt.show()
 
+    '''
+    Add an offset to the paths with distance half the kerf diameter.
+    This compensates for cutting diameter.
+    '''
+    def kerf_compensation(self, path):
+        # difference line segment vectors.
+        diff = (np.pad(path, ((0, 1), (0, 0)), 'constant') - np.pad(path, ((1, 0), (0, 0)), 'constant'))[1:-1,:]
+
+        # Find angle of each line segment.
+        angle = np.arctan2(diff[:,1], diff[:,0])
+
+        # Convert angle to unit vector, rotated 90 deg ccw from original.
+        x = np.sin(angle)
+        y = -np.cos(angle)
+        unit = np.array([x, y]).T
+
+        # Take the sum of the neighbouring unit vectors.
+        direction = np.pad(unit, ((0, 1),(0, 0)), 'edge') + np.pad(unit, ((0, 1),(0, 0)), 'edge')
+
+        # Normalize vector length to have half the kerf diameter as length.
+        magnitude = np.linalg.norm(direction, axis=1)
+        magnitude = np.array([magnitude, magnitude]).T
+        translate = direction/magnitude * self.kerf/2
+
+        # Translate each point to the new location
+        newPath = translate + path
+        return newPath
 
     """
     Converts list of coords to gcode

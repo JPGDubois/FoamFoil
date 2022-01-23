@@ -1,6 +1,13 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
 from PyQt5.QtGui import QPalette, QColor
+import numpy as np
+
+
+a = np.array([[0,1],[2,3],[4,5]])
+b = np.pad(a, ((1, 0), (0, 0)), 'constant')
+print(b)
+'''
 
 class MainWindow(QMainWindow):
 
@@ -34,3 +41,4 @@ window = MainWindow()
 window.show()
 
 app.exec()
+'''
