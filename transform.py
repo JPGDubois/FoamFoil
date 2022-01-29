@@ -218,8 +218,8 @@ class Section:
         self.twist = [0, 0] # Twist angle in radians
         self.dihedral = [0, 0]
 
-        self.root = None    # Airfoil1 is an instance of the AIrfoil class
-        self.tip = None    # Airfoil1 is an instance of the AIrfoil class
+        self.root = None    # Is an instance of the Airfoil class
+        self.tip = None    # Is an instance of the Airfoil class
 
         self.rootName = None
         self.tipName = None
@@ -420,20 +420,20 @@ class Profile:
         self.Sec = Sec  # Must be an instance of Section.
 
         #Machine Properties.
-        self.x_lenght = 600
-        self.z_lenght = 100
-        self.ySpan = 1000 # Distance between 2d movement platforms in the y direction.
+        self.x_lenght = 600 # Maximum machine travel in the x-direction.
+        self.z_lenght = 100 # Maximum machine travel in the z-direction.
+        self.ySpan = 1000   # Distance between 2d movement platforms in the y direction.
 
         # Profiles to cut.
-        self.rootCut = None
-        self.tipCut = None
+        self.rootCut = None # Wingroot profiles on parralel planes.
+        self.tipCut = None  # Wingtip profiles on parralel planes.
 
         # Boundaries of the cut.
-        self.xOffsetLE = 10
-        self.xOffsetTE = 10
-        self.yOffset = 20
+        self.xOffsetLE = 10 # Distance before cut profile.
+        self.xOffsetTE = 10 # Distance after cut profile.
+        self.yOffset = 20   # Distance above cut profile.
 
-        # Separated paths.
+        # Main separated paths.
         self.rootTopPath = None
         self.rootBottomPath = None
         self.tipTopPath = None
@@ -441,19 +441,31 @@ class Profile:
         self.rootOrigin = None
         self.tipOrigin = None
 
+        '''
+        # Cylindrical channel nner cutout.
+        self.cylindricalChannel = True  # Set true if cutout must be included.
+        self.rootChordPercentage = 0.3  # Distance from LE, in percentage chord.
+        self.tipChordPercentage = 0.3   # Distance from LE, in percentage chord.
+        self.rootDiameter = 10  # Diameter of the channel at the root.
+        self.tipDiameter = 10   # Diameter of the channel at the tip.
+        self.rootChannel = None # Coordinates to be cut root.
+        self.tipChannel = None  # Coordinates to be cut tip.
+        '''
+
         # Gcode file properties.
-        self.fileName = 'test'
-        self.ax1 = 'X'
-        self.ax2 = 'Y'
-        self.ax3 = 'U'
-        self.ax4 = 'Z'
-        self.gcode = []
+        self.fileName = 'test'  # Gcode file name.
+        self.fileExtension = '.txt'  # Gcode filename extension.
+        self.ax1 = 'X'  # 1st axis name.
+        self.ax2 = 'Y'  # 2nd axis name.
+        self.ax3 = 'U'  # 3th axis name.
+        self.ax4 = 'Z'  # 4th axis name.
+        self.gcode = [] # List containing the gcode commands.
 
         # Cutting properties.
-        self.cuttingVoltage = 300
-        self.rapidFeed = 1200
-        self.cuttingFeed = 230
-        self.kerf = 0
+        self.cuttingVoltage = 300   # Percentage of machine voltage send to the cutting wire.
+        self.rapidFeed = 1200   # Speed of the rapid parts of the operation, in mm/s.
+        self.cuttingFeed = 230  # Speed of the cutting parts of the operation, in mm/s.
+        self.kerf = 0   # Diameter of the cut.
 
     def set_filename(fileName):
         self.fileName = fileName
@@ -494,8 +506,6 @@ class Profile:
     tip and root foil and finding the intersection of that line with the cutting planes.
     '''
     def project(self, plane):
-
-
         # Get airfoil coordinates
         rootFoil, tipFoil = self.Sec.get_foils()
 
@@ -542,11 +552,11 @@ class Profile:
         tipTop, tipBottom = np.split(tip, 2, 0)
 
         # Compensate for kerf width
-        rootTop = self.kerf_compensation(rootTop)
-        rootBottom = self.kerf_compensation(rootBottom)
+        rootTop = self.kerf_compensation_airfoil(rootTop)
+        rootBottom = self.kerf_compensation_airfoil(rootBottom)
 
-        tipTop = self.kerf_compensation(tipTop)
-        tipBottom = self.kerf_compensation(tipBottom)
+        tipTop = self.kerf_compensation_airfoil(tipTop)
+        tipBottom = self.kerf_compensation_airfoil(tipBottom)
 
         # Find highest point of profiles
         rootMax = np.amax(rootTop[:,1])
@@ -609,9 +619,10 @@ class Profile:
     '''
     Add an offset to the paths with distance half the kerf diameter.
     This compensates for cutting diameter.
+    Only valid for small diameter wires.
     '''
-    def kerf_compensation(self, path):
-        # difference line segment vectors.
+    def kerf_compensation_airfoil(self, path):
+        # Difference line segment vectors.
         diff = (np.pad(path, ((0, 1), (0, 0)), 'constant') - np.pad(path, ((1, 0), (0, 0)), 'constant'))[1:-1,:]
 
         # Find angle of each line segment.
@@ -647,20 +658,20 @@ class Profile:
     """
     def coords_to_gcode(self, directory, mirror = False):
         # Check if file name already exists, increment file name if needed.
-        fileName = f'{directory}/{self.fileName}.txt'
+        fileName = f'{directory}/{self.fileName}{self.fileExtension}'
         name = self.fileName
         i = 1
         while os.path.exists(fileName):
-            fileName = f'{directory}/{self.fileName}({i}).txt'
+            fileName = f'{directory}/{self.fileName}({i}){self.fileExtension}'
             name = f'{self.fileName}({i})'
             i += 1
 
         if mirror:
-            fileName = f'{directory}/{self.fileName}_mirror.txt'
+            fileName = f'{directory}/{self.fileName}_mirror{self.fileExtension}'
             name = f'{self.fileName}_mirror'
             i = 1
             while os.path.exists(fileName):
-                fileName = f'{directory}/{self.fileName}_mirror({i}).txt'
+                fileName = f'{directory}/{self.fileName}_mirror({i}){self.fileExtension}'
                 name = f'{self.fileName}_mirror({i})'
                 i += 1
         self.gcode = ['%','('+self.fileName+') G21 G90']

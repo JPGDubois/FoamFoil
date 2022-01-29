@@ -6,7 +6,7 @@
     name: 'Default'
     cuttingVoltage: 300 # Cutting voltage (0 - 1000).
     cuttingFeed: 100 # Speed of the cut in mm/s.
-    kerf: 1.0 # Diameter of the cut in mm.
+    kerf: 10.0 # Diameter of the cut in mm.
   preset_1:
     name: 'EPS foam for 30cm'
     cuttingVoltage: 300 # Cutting voltage (0 - 1000).
