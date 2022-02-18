@@ -100,10 +100,11 @@ class Airfoil:
 
         # Takes small set of points near LE to find accurate LE.
         for i in range(len(u)):
-            if u[i] < 0.05:
+            if u[i] < 0.005:
                 leu.append(u[i])
                 lev.append(v[i])
 
+        # Make sure all points are unique
         le = np.column_stack((leu, lev))
         le = le[np.unique(le[:,1], return_index=True)[1]]
 
