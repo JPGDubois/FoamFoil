@@ -13,7 +13,6 @@ xAxis = np.array([1, 0, 0])
 yAxis = np.array([0, 1, 0])
 zAxis = np.array([0, 0, 1])
 
-
 '''
 The Airfoil class contains all operation functions that can be performed on
 the airfoil coordinates. It also contains get_ functions to request certain
@@ -22,11 +21,11 @@ certain properties of the airfoil.
 class Airfoil:
 
     def __init__(self, foil, name = None):
-        self.name = name    # Name of the airfoil
-        self.ofoil = foil   # Original foil datapoints (3d numpy array)
-        self.foil = foil    # Foil datapoints (3d numpy array)
-        self.qcpoint = np.array([0.25, 0., 0.]) # Quarter chord point (rotation center)
-        self.lepoint = np.array([0., 0., 0.])   # Leading edge point
+        self.name = name    # Name of the airfoil.
+        self.ofoil = foil   # Original foil datapoints (3d numpy array).
+        self.foil = foil    # Foil datapoints (3d numpy array).
+        self.qcpoint = np.array([0.25, 0., 0.]) # Quarter chord point (rotation center).
+        self.lepoint = np.array([0., 0., 0.])   # Leading edge point.
 
     '''
     get_ functions return the requested property of the class.
@@ -98,17 +97,21 @@ class Airfoil:
 
         leu= []
         lev = []
+
         # Takes small set of points near LE to find accurate LE.
         for i in range(len(u)):
             if u[i] < 0.05:
                 leu.append(u[i])
                 lev.append(v[i])
 
+        le = np.column_stack((leu, lev))
+        le = le[np.unique(le[:,1], return_index=True)[1]]
+
         # Sets up a linear point spacing and does spline interpolation of the LE curve.
         newLev = np.linspace(min(lev), max(lev), 200)
-        newLeu = si.interpolate.interp1d(lev, leu, kind='cubic')(newLev)
+        newLeu = si.interpolate.interp1d(le[:,1], le[:,0], kind='cubic')(newLev)
 
-        # Finds TE.
+        # Finds TE by taking the average of first and last point.
         teu = (u[0] + u[-1])/2
         tev = (v[0] + v[-1])/2
 
@@ -133,31 +136,23 @@ class Airfoil:
         # Normalizes so that TE is at [1,0].
         self.scale(1)
 
-        # Split foil into upper and lower curves.
+        # Get foil coords.
         u = self.foil[:, 0]
         v = self.foil[:, 2]
 
         # Normalise the trailing edge
         u[0] = 1.0
         u[-1] = 1.0
+        v[0] = 0.0
+        v[-1] = 0.0
 
-        # Splits foil into upper and lower curves.
-        for i in range(len(u)):
-            if u[i] < 0.05:
-                if v[i] < 0:
-                    indexSplit = i
-                    break
+        # Split airfoil at [0,0] (the LE).
+        indexSplit = np.argmin(u)
 
-        # Flips if the foil starts on the underside.
+        # Flip airfoil if it starts at the underside.
         if v[indexSplit-1] - v[indexSplit] < 0:
             u = np.flip(u)
             v = np.flip(v)
-
-            for i in range(len(u)):
-                if u[i] < 0.05:
-                    if v[i] < 0:
-                        indexSplit = i
-                        break
 
         # Adds the LE to both curves.
         ut = np.concatenate((u[:indexSplit],[0]), axis=None)
@@ -166,6 +161,7 @@ class Airfoil:
         ul = np.concatenate(([0],u[indexSplit:]), axis=None)
         vl = np.concatenate(([0],v[indexSplit:]), axis=None)
 
+        # Flip top profiles such that all list of coordinates go from LE to TE.
         ut = np.flip(ut)
         vt = np.flip(vt)
 
@@ -192,11 +188,10 @@ class Airfoil:
         u = np.concatenate( ( np.flip(uNew),uNew[1:] ), axis=None )
         v = np.zeros(npoints-1)
         w = np.concatenate( ( np.flip(vtNew),vlNew[1:] ), axis=None )
+
         self.foil = np.array([u, v, w]).T
         self.qcpoint = np.array([0.25, 0., 0.])
         self.lepoint = np.array([0., 0., 0.])
-
-
 
 '''
 The section class is responsible to house all the properties related to a wing
@@ -216,7 +211,7 @@ class Section:
         self.span = [0, 1]
         self.sweep = [0, 0] # Sweep offset in unit
         self.twist = [0, 0] # Twist angle in radians
-        self.dihedral = [0, 0]
+        self.dihedral = [0, 0] # Dihedral angle in radians
 
         self.root = None    # Is an instance of the Airfoil class
         self.tip = None    # Is an instance of the Airfoil class
@@ -224,9 +219,9 @@ class Section:
         self.rootName = None
         self.tipName = None
 
-        self.zOffsetRoot = 20
-        self.yOffsetRoot = 30
-        self.xOffsetRoot = 100
+        self.zOffsetRoot = 7
+        self.yOffsetRoot = 100
+        self.xOffsetRoot = 10
 
     '''
     The set_ functions are used to configure the properties of the Section
@@ -351,7 +346,7 @@ class Section:
         self.root.translate(xAxis, self.sweep[0])
         self.tip.translate(xAxis, self.sweep[1])
 
-        # Normalise the position of the airfoil such the LE root is alligned with the origen
+        # Normalise the position of the airfoil such the LE root is aligned with the origen
         self.root.translate(yAxis, -self.span[0])
         self.tip.translate(yAxis, -self.span[0])
         self.tip.translate(xAxis, -self.sweep[0])
@@ -362,12 +357,12 @@ class Section:
         self.tip.rotate(xAxis, self.dihedral[1])
 
     '''
-    The allign_le and allign_qc functions rotate the section so the leading edge (le)
+    The align_le and align_qc functions rotate the section so the leading edge (le)
     or the rotation point (qc) are parallel to the y axis. This function allows wings
     with high sweep to be made on small machines and to minimize the amount of wasted
     foam.
     '''
-    def allign_le(self):
+    def align_le(self):
         # Find the angle of the leading edge
         xOffset = self.root.get_lepoint()[0] - self.tip.get_lepoint()[0]
         span = np.abs(self.span[0] - self.span[1])
@@ -377,7 +372,7 @@ class Section:
         self.root.rotate(zAxis, alpha)
         self.tip.rotate(zAxis, alpha)
 
-    def allign_qc(self):
+    def align_qc(self):
         # Find the angle of the quarter chord line
         xOffset = self.root.get_qcpoint()[0] - self.tip.get_qcpoint()[0]
         span = np.abs(self.span[0] - self.span[1])
@@ -391,7 +386,7 @@ class Section:
     Change the height of the current section to match the height of the previous section.
     This is helpfull in manufacturing.
     '''
-    def height_allignment(self, Sec):
+    def height_alignment(self, Sec):
         # Find the difference in height of the tip qcpoint previous section and
         # the current root qcpoint height.
         diff = self.root.get_qcpoint()[1] - Sec.tip.get_qcpoint()[1]
@@ -431,7 +426,7 @@ class Profile:
         # Boundaries of the cut.
         self.xOffsetLE = 10 # Distance before cut profile.
         self.xOffsetTE = 10 # Distance after cut profile.
-        self.yOffset = 20   # Distance above cut profile.
+        self.yOffset = 10   # Distance above cut profile.
 
         # Main separated paths.
         self.rootTopPath = None
@@ -462,10 +457,11 @@ class Profile:
         self.gcode = [] # List containing the gcode commands.
 
         # Cutting properties.
-        self.cuttingVoltage = 300   # Percentage of machine voltage send to the cutting wire.
-        self.rapidFeed = 1200   # Speed of the rapid parts of the operation, in mm/s.
-        self.cuttingFeed = 230  # Speed of the cutting parts of the operation, in mm/s.
-        self.kerf = 0   # Diameter of the cut.
+        self.cuttingVoltage = 0   # Percentage of machine voltage send to the cutting wire.
+        self.rapidFeed = 100   # Speed of the rapid parts of the operation, in mm/s.
+        self.cuttingFeed = 100  # Speed of the cutting parts of the operation, in mm/s.
+        self.rootKerf = 0   # Diameter of the cut.
+        self.tipKerf = 0    # Diameter of the cut.
 
     def set_filename(fileName):
         self.fileName = fileName
@@ -491,8 +487,9 @@ class Profile:
     def set_yoffset(self, yOffset):
         self.yOffset = yOffset
 
-    def set_kerf(self, kerf):
-        self.kerf = kerf
+    def set_kerf(self, rootKerf, tipKerf):
+        self.rootKerf = rootKerf
+        self.tipKerf = tipKerf
 
     def get_yspan(self):
         return self.ySpan
@@ -552,11 +549,11 @@ class Profile:
         tipTop, tipBottom = np.split(tip, 2, 0)
 
         # Compensate for kerf width
-        rootTop = self.kerf_compensation_airfoil(rootTop)
-        rootBottom = self.kerf_compensation_airfoil(rootBottom)
+        rootTop = self.kerf_compensation_airfoil(rootTop, self.rootKerf)
+        rootBottom = self.kerf_compensation_airfoil(rootBottom, self.rootKerf)
 
-        tipTop = self.kerf_compensation_airfoil(tipTop)
-        tipBottom = self.kerf_compensation_airfoil(tipBottom)
+        tipTop = self.kerf_compensation_airfoil(tipTop, self.tipKerf)
+        tipBottom = self.kerf_compensation_airfoil(tipBottom, self.tipKerf)
 
         # Find highest point of profiles
         rootMax = np.amax(rootTop[:,1])
@@ -567,9 +564,9 @@ class Profile:
         self.rootOrigin = np.array([rootTop[-1][0] - self.xOffsetLE, yOffset])
         self.tipOrigin = np.array([tipTop[-1][0] - self.xOffsetLE, yOffset])
 
-        # Allignment mode, the wire will be at the at the exact point where the foam needs to be positioned.
-        self.rootAllign = np.array([rootTop[-1][0] - self.xOffsetLE, rootMax])
-        self.tipAllign = np.array([tipTop[-1][0] - self.xOffsetLE, tipMax])
+        # alignment mode, the wire will be at the at the exact point where the foam needs to be positioned.
+        self.rootAlign = np.array([rootTop[-1][0] - self.xOffsetLE, rootMax])
+        self.tipAlign = np.array([tipTop[-1][0] - self.xOffsetLE, tipMax])
 
         # Make the lead in paths.
         tr = np.array([rootTop[-1][0] - self.xOffsetLE, rootTop[-1][1]])
@@ -621,7 +618,7 @@ class Profile:
     This compensates for cutting diameter.
     Only valid for small diameter wires.
     '''
-    def kerf_compensation_airfoil(self, path):
+    def kerf_compensation_airfoil(self, path, kerf):
         # Difference line segment vectors.
         diff = (np.pad(path, ((0, 1), (0, 0)), 'constant') - np.pad(path, ((1, 0), (0, 0)), 'constant'))[1:-1,:]
 
@@ -639,7 +636,7 @@ class Profile:
         # Normalize vector length to have half the kerf diameter as length.
         magnitude = np.linalg.norm(direction, axis=1)
         magnitude = np.array([magnitude, magnitude]).T
-        translate = direction/magnitude * self.kerf/2
+        translate = direction/magnitude * kerf/2
 
         # Translate each point to the new location
         newPath = translate + path
@@ -686,10 +683,10 @@ class Profile:
         # Sets the speed for rapid movement.
         self.gcode.append(f'G1 F{self.rapidFeed}')
 
-        # Go to allignment position.
+        # Go to alignment position.
         # Pause the machine to allow for precise positioning of the foam.
         # The program will continue with a cycle start command.
-        self.gcode.append(numpy_to_line(self.rootAllign, self.tipAllign))
+        self.gcode.append(numpy_to_line(self.rootAlign, self.tipAlign))
         self.gcode.append('M5 M0')
 
         # Move straight up to origin.

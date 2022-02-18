@@ -1,44 +1,32 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
-from PyQt5.QtGui import QPalette, QColor
-import numpy as np
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QMessageBox
+
+def dialog():
+    mbox = QMessageBox()
+
+    mbox.setText("Your allegiance has been noted")
+    mbox.setDetailedText("You are now a disciple and subject of the all-knowing Guru")
+    mbox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+
+    mbox.exec_()
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    w = QWidget()
+    w.resize(300,300)
+    w.setWindowTitle("foamfoil")
+
+    label = QLabel(w)
+    label.setText("Select project folder")
+    label.move(100,130)
+    label.show()
+
+    btn = QPushButton(w)
+    btn.setText('Beheld')
+    btn.move(110,150)
+    btn.show()
+    btn.clicked.connect(dialog)
 
 
-a = np.array([[0,1],[2,3],[4,5]])
-b = np.pad(a, ((1, 0), (0, 0)), 'constant')
-print(b)
-'''
-
-class MainWindow(QMainWindow):
-
-    def __init__(self):
-        super(MainWindow, self).__init__()
-
-        self.setWindowTitle("My App")
-
-        layout = QVBoxLayout()
-
-        layout.addWidget(Color('red'))
-
-        widget = QWidget()
-        widget.setLayout(layout)
-        self.setCentralWidget(widget)
-
-class Color(QWidget):
-
-    def __init__(self, color):
-        super(Color, self).__init__()
-        self.setAutoFillBackground(True)
-
-        palette = self.palette()
-        palette.setColor(QPalette.Window, QColor(color))
-        self.setPalette(palette)
-
-
-app = QApplication(sys.argv)
-
-window = MainWindow()
-window.show()
-
-app.exec()
-'''
+    w.show()
+    sys.exit(app.exec_())
