@@ -610,16 +610,16 @@ class Profile:
         self.tipBottomPath = tipBottom
 
         # Plot the paths
-        fig = plt.figure('Airfoils', figsize=(12, 6))
-        ax = fig.add_subplot(111)
-        ax.plot(rootTop[:,0], rootTop[:,1], marker = '.', color = 'r')
-        ax.plot(rootBottom[:,0], rootBottom[:,1], marker = '.', color = 'r')
-        ax.plot(tipTop[:,0], tipTop[:,1], marker = '.', color = 'b')
-        ax.plot(tipBottom[:,0], tipBottom[:,1], marker = '.', color = 'b')
-
-        ax.plot(xRoot, yRoot, color = 'k')
-        ax.plot(xTip, yTip, color = 'k')
-        plt.show()
+        # fig = plt.figure('Airfoils', figsize=(12, 6))
+        # ax = fig.add_subplot(111)
+        # ax.plot(rootTop[:,0], rootTop[:,1], marker = '.', color = 'r')
+        # ax.plot(rootBottom[:,0], rootBottom[:,1], marker = '.', color = 'r')
+        # ax.plot(tipTop[:,0], tipTop[:,1], marker = '.', color = 'b')
+        # ax.plot(tipBottom[:,0], tipBottom[:,1], marker = '.', color = 'b')
+        #
+        # ax.plot(xRoot, yRoot, color = 'k')
+        # ax.plot(xTip, yTip, color = 'k')
+        # plt.show()
 
     '''
     Add an offset to the paths with distance half the kerf diameter.

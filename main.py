@@ -27,6 +27,7 @@ def visualize_foil(airfoils):
     plt.show()
 
 def visualize_section(Sec, Prof):
+
     plt.rcParams["figure.figsize"] = [7.00, 3.50]
     plt.rcParams["figure.autolayout"] = True
     fig = plt.figure('Section', figsize=(12, 6))
@@ -56,12 +57,18 @@ def visualize_section(Sec, Prof):
     zTip2 = data2[1][:,2]
     ax.plot(xRoot1, yRoot1, zRoot1, alpha = 1, label = rootName, marker='.')
     ax.scatter(xqcRoot, yqcRoot, zqcRoot, alpha = 1)
-    ax.plot(xTip1, yTip1, zTip1, alpha = 1, label = tipName, marker='.')
+    #ax.plot(xTip1, yTip1, zTip1, alpha = 1, label = tipName, marker='.')
     ax.scatter(xqcTip, yqcTip, zqcTip, alpha = 1)
-    ax.plot(xRoot2, yRoot2, zRoot2, alpha = 1, marker='.')
+    #ax.plot(xRoot2, yRoot2, zRoot2, alpha = 1, marker='.')
     ax.plot(xTip2, yTip2, zTip2, alpha = 1, marker='.')
     ax.legend()
     plt.show()
+
+    # Dump points into an array for later processing
+    print(np.vstack((xRoot1, yRoot1, zRoot1)).shape)
+    #print(np.vstack((xRoot2, yRoot2, zRoot2)).shape)
+    print(np.vstack((xTip1, yTip1, zTip1)).shape)
+    np.savez("coordinate_dump.npz", root=np.vstack((xRoot1, yRoot1, zRoot1)), tip=np.vstack((xTip1, yTip1, zTip1)))
 
 def export_dat(Prof):
     data = Prof.get_profiles()
@@ -98,7 +105,7 @@ def read_xwimp(directory):
         sections[i].set_root(data[i])
         sections[i].set_tip(data[i+1])
         air = sections[i].set_foils(directory)
-        visualize_foil(air)
+        #visualize_foil(air)
     return sections
 
 def get_project_folder(default = '/'):
