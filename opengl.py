@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from glumpy import app, gloo, gl, glm
 
 # Load the coordinate dump and transpose it so we have a list
@@ -31,18 +32,30 @@ void main()
 #root = np.array([[0, 0, 0], [100, 100, 100]])
 
 V = np.zeros(root.shape[0] + tip.shape[0], [("a_position", np.float32, 3)])
-V["a_position"] = np.vstack((root, tip)) / 100
+# Scale by a factor of 100, which seems to somewhat normalize it to what fits on a screen. Also offset it to try
+# to get the center of rotation to be somewhat in the middle (I can probably do an exact solution, but laziness you
+# know)
+V["a_position"] = (np.vstack((root, tip)) - np.array([50, 200, 50])) / 100
 
+# Draw the lines
+# NOTE: Assumes number of tip/root datapoints are the same
 I_list = []
-for i in range(root.shape[0]):
+for i in range(0, root.shape[0]):
     # Connect the airfoil segments themselves
     I_list.append([i, (i + 1) % (root.shape[0] - 1)])
+    I_list.append([i + root.shape[0], (i + root.shape[0] + 1) % (root.shape[0] + tip.shape[0] - 1)])
 
-    # Connect two airfoils
-    I_list.append([i, i + root.shape[0]])
+    # Connect two airfoils (but only do this for some datapoints to avoid weird rendering effects)
+    if i % 5 == 0:
+        I_list.append([i, i + root.shape[0]])
 I = np.array(I_list, dtype=np.uint32)
 print(V)
 print(I)
+
+print("=====")
+print(tip)
+print("!!!!!")
+print(root)
 
 #V["a_position"] = [[ 1, 1, 1], [-1, 1, 1], [-1,-1, 1], [ 1,-1, 1],
 #                   [ 1,-1,-1], [ 1, 1,-1], [-1, 1,-1], [-1,-1,-1]]
@@ -72,15 +85,20 @@ def on_resize(width, height):
    ratio = width / float(height)
    cube['u_projection'] = glm.perspective(45.0, ratio, 2.0, 100.0)
 
+
+draw_time = 5  # s
+cur_time = 0  # s; total elapsed time
 @window.event
 def on_draw(dt):
-    global phi, theta
+    global phi, theta, cur_time
     window.clear()
-    cube.draw(gl.GL_LINES, I)
+    cube.draw(gl.GL_LINES, I[:math.ceil((cur_time % draw_time) / draw_time * len(I))])
+    print(math.ceil((cur_time % draw_time) / draw_time) * len(I))
 
     # Make cube rotate
-    theta += 0.5 # degrees
-    phi += 0.5 # degrees
+    theta += 30 * dt # degrees
+    phi += 30 * dt # degrees
+    cur_time += dt
     model = np.eye(4, dtype=np.float32)
     glm.rotate(model, theta, 0, 0, 1)
     glm.rotate(model, phi, 0, 1, 0)
