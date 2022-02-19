@@ -142,6 +142,13 @@ class Airfoil:
         v = self.foil[:, 2]
 
         # Normalise the trailing edge
+        c = []
+        for i in range(len(u)):
+            if u[i] > 1.0:
+                c.append(i)
+        u = np.delete(u, c)
+        v = np.delete(v, c)
+
         u[0] = 1.0
         u[-1] = 1.0
         v[0] = 0.0
