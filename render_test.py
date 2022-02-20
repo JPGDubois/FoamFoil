@@ -1,3 +1,10 @@
+"""
+Very simple demo of rendering using the glumpy library.
+This demo was hacked together in a very short timespan
+as a proof-of-concept, and should in no way be taken
+as well-written or finished code. It serves an
+illustrative purposes only.
+"""
 import numpy as np
 import math
 from glumpy import app, gloo, gl, glm
