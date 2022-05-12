@@ -5,13 +5,13 @@
   preset_0:
     name: 'Default'
     cuttingVoltage: 700 # Cutting voltage (0 - 1000).
-    cuttingFeed: 100 # Speed of the cut in mm/s.
+    cuttingFeed: 100 # Speed of the cut in mm/min.
     rootKerf: 1.0 # Diameter of the cut in mm.
     tipKerf: 2.0 # Diameter of the cut in mm.
   preset_1:
     name: 'EPS foam for 30cm'
     cuttingVoltage: 300 # Cutting voltage (0 - 1000).
-    cuttingFeed: 100 # Speed of the cut in mm/s.
+    cuttingFeed: 100 # Speed of the cut in mm/min.
     rootKerf: 2.0 # Diameter of the cut in mm.
     tipKerf: 2.0 # Diameter of the cut in mm.
 ...

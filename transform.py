@@ -45,9 +45,6 @@ class Airfoil:
     def get_foil(self):
         return self.foil
 
-    def get_name(self):
-        return self.name
-
     def set_qcpoint(self, qc):
         self.qcpoint = np.array([qc, 0., 0.])
 
@@ -100,7 +97,7 @@ class Airfoil:
 
         # Takes small set of points near LE to find accurate LE.
         for i in range(len(u)):
-            if u[i] < 0.005:
+            if u[i] < 0.015:
                 leu.append(u[i])
                 lev.append(v[i])
 
@@ -229,7 +226,7 @@ class Section:
 
         self.zOffsetRoot = 7
         self.yOffsetRoot = 100
-        self.xOffsetRoot = 10
+        self.xOffsetRoot = 0
 
     '''
     The set_ functions are used to configure the properties of the Section
@@ -256,7 +253,7 @@ class Section:
     def set_foils(self, filePath):
         for fileName in os.listdir(filePath):
             path = os.path.join(filePath, fileName)
-            with open(path, 'r') as f:
+            with open(path, 'r', errors='ignore') as f:
                 foilName = f.readline().strip().replace(' ', '/_/')
 
             if foilName == self.rootName:
@@ -434,7 +431,7 @@ class Profile:
         # Boundaries of the cut.
         self.xOffsetLE = 10 # Distance before cut profile.
         self.xOffsetTE = 10 # Distance after cut profile.
-        self.yOffset = 10   # Distance above cut profile.
+        self.yOffset = 30   # Distance above cut profile.
 
         # Main separated paths.
         self.rootTopPath = None
@@ -466,7 +463,7 @@ class Profile:
 
         # Cutting properties.
         self.cuttingVoltage = 0   # Percentage of machine voltage send to the cutting wire.
-        self.rapidFeed = 100   # Speed of the rapid parts of the operation, in mm/s.
+        self.rapidFeed = 800   # Speed of the rapid parts of the operation, in mm/s.
         self.cuttingFeed = 100  # Speed of the cutting parts of the operation, in mm/s.
         self.rootKerf = 0   # Diameter of the cut.
         self.tipKerf = 0    # Diameter of the cut.
@@ -694,13 +691,13 @@ class Profile:
         # Go to alignment position.
         # Pause the machine to allow for precise positioning of the foam.
         # The program will continue with a cycle start command.
-        self.gcode.append(numpy_to_line(self.rootAlign, self.tipAlign))
+        self.gcode.append(numpy_to_line(self.rootAlign, self.rootAlign))
         self.gcode.append('M5 M0')
 
         # Move straight up to origin.
         # Pause the machine to allow for checking the height.
         # The program will continue with a cycle start command.
-        self.gcode.append(numpy_to_line(self.rootOrigin, self.tipOrigin))
+        self.gcode.append(numpy_to_line(self.rootOrigin, self.rootOrigin))
         self.gcode.append('M5 M0')
 
         # Move horizontally untill x coordinate TE cut.

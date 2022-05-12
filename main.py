@@ -4,7 +4,6 @@ from tkinter import filedialog as fd
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
-import math
 import yaml
 import transform as t
 
@@ -125,20 +124,26 @@ def set_preset(prof, i = 0):
         prof.set_kerf(presets[key]['rootKerf'], presets[key]['tipKerf'])
         print(f'Preset {presets[key]["name"]} selected')
 
-dir = get_project_folder('C:\\Users\\justi\\Documents\\GitHub\\FoamFoil')
+dir = get_project_folder()
 Sec = read_xwimp(dir)
 for i in Sec:
+    i.set_npoints(2000)
     i.build()
-    i.align_le()
+    #i.align_le()
     i.locate_section()
     prof = t.Profile(i)
     set_preset(prof, 0)
-    prof.set_yspan(700)
+
+    # Set distance between axis.
+    prof.set_yspan(1250)
+
     prof.cutting_planes()
     visualize_section(i, prof)
     #export_dat(prof)
     prof.paths()
-    #prof.coords_to_gcode(dir, mirror = False)
 
-    #prof.coords_to_gcode(dir, mirror = True)
+    # Export to file
+    prof.coords_to_gcode(dir, mirror = False)
+
+    prof.coords_to_gcode(dir, mirror = True)
     print(f'Section done')
